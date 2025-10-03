@@ -338,28 +338,31 @@
                                         </span>
                                         
                                         <div class="flex space-x-2">
-                                            @auth
-                                                @if($product->in_stock)
-                                                <form action="{{ route('cart.add', $product->id) }}" method="POST">
-    @csrf
-    <input type="hidden" name="product_id" value="{{ $product->id }}">
-    <input type="hidden" name="quantity" value="1">
-    <button type="submit" 
-            class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors duration-200 flex items-center">
-        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-        </svg>
-        В корзину
-    </button>
-</form>
-                                                @endif
-                                            @else
-                                                <a href="{{ route('login') }}" 
-                                                   class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 font-medium text-sm transition-colors duration-200">
-                                                    Войдите чтобы купить
-                                                </a>
-                                            @endauth
-                                            <!--a href="{{ route('products.show', $product->slug) }}" 
+                                           
+
+										   @auth
+    @if($product->in_stock)
+    <form action="{{ route('cart.add', $product->id) }}" method="POST" class="add-to-cart-form">
+        @csrf
+        <input type="hidden" name="quantity" value="1">
+        <button type="submit" 
+                class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors duration-200 flex items-center add-to-cart-btn">
+            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+            </svg>
+            В корзину
+        </button>
+    </form>
+    @endif
+@else
+    <a href="{{ route('login') }}" 
+       class="bg-gray-200 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-300 font-medium text-sm transition-colors duration-200">
+        Войдите чтобы купить
+    </a>
+@endauth
+                                            
+											
+											<!--a href="{{ route('products.show', $product->slug) }}" 
                                                class="border border-blue-600 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 font-medium text-sm transition-colors duration-200">
                                                 Подробнее
                                             </a-->
@@ -420,6 +423,101 @@
             clearTimeout(searchTimeout);
         });
     });
+	
+	
+	document.addEventListener('DOMContentLoaded', function() {
+    // Обработка всех форм добавления в корзину
+    const cartForms = document.querySelectorAll('.add-to-cart-form');
+    
+    cartForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const submitButton = this.querySelector('.add-to-cart-btn');
+            const originalText = submitButton.innerHTML;
+            
+            // Показываем индикатор загрузки
+            submitButton.innerHTML = 'Добавляем...';
+            submitButton.disabled = true;
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(data.message, 'success');
+                    // Обновляем счетчик корзины - ВАЖНО: принудительно обновляем
+                    updateCartCount(data.cart_count);
+                    // Дополнительно обновляем через статический метод
+                    updateCartCountFromServer();
+                } else {
+                    showNotification(data.message, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('Ошибка при добавлении в корзину', 'error');
+            })
+            .finally(() => {
+                // Восстанавливаем кнопку
+                submitButton.innerHTML = originalText;
+                submitButton.disabled = false;
+            });
+        });
+    });
+    
+    function showNotification(message, type = 'success') {
+        // Создаем уведомление
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
+            type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Удаляем уведомление через 3 секунды
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    }
+    
+    function updateCartCount(count) {
+        // Обновляем счетчик корзины в навигации
+        const cartCountElements = document.querySelectorAll('.cart-count');
+        cartCountElements.forEach(element => {
+            element.textContent = count;
+        });
+    }
+    
+    // Новая функция: обновление счетчика через серверный метод
+    function updateCartCountFromServer() {
+        fetch('/cart/count', {
+            method: 'GET',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.count !== undefined) {
+                updateCartCount(data.count);
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cart count:', error);
+        });
+    }
+});
+	
+	
 </script>
 
 <style>

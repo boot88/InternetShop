@@ -112,7 +112,7 @@ public function add(Request $request, $productId)
         'quantity' => $request->quantity
     ]);
 
-    return redirect()->back()->with('success', 'Количество обновлено');
+    return redirect()->back();//->with('success', 'Количество обновлено');
 }
 
     public function remove($itemId)
@@ -123,7 +123,7 @@ public function add(Request $request, $productId)
 
     $cartItem->delete();
 
-    return redirect()->back()->with('success', 'Товар удален из корзины');
+    return redirect()->back();//->with('success', 'Товар удален из корзины');
 }
 
     public function clear()
@@ -131,7 +131,7 @@ public function add(Request $request, $productId)
         $cart = $this->getOrCreateCart();
         $cart->items()->delete();
 
-        return redirect()->back()->with('success', 'Корзина очищена');
+        return redirect()->back();//->with('success', 'Корзина очищена');
     }
 
    private function getOrCreateCart()

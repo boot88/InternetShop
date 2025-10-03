@@ -171,7 +171,7 @@
                     @else
                         <!-- Обычный товар без вариантов -->
                         @if($product->in_stock)
-    <form action="{{ route('cart.add') }}" method="POST" class="flex items-center space-x-4" id="addToCartForm">
+    <form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex items-center space-x-4" id="addToCartForm">
         @csrf
         <input type="hidden" name="product_id" value="{{ $product->id }}">
         
