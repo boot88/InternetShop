@@ -74,81 +74,138 @@
 
             <!-- Цена -->
             <div class="mb-6">
-                <span class="text-3xl font-bold text-blue-600">
-                    {{ number_format($product->final_price, 0, ',', ' ') }} ₽
-                </span>
-                @if($product->has_discount)
-                    <span class="text-xl text-gray-500 line-through ml-2">
-                        {{ number_format($product->compare_price, 0, ',', ' ') }} ₽
+                @if($product->has_variants && $product->variants->isNotEmpty())
+                    <!-- Если есть варианты, показываем диапазон цен -->
+                    @php
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                    @endphp
+                    <span class="text-3xl font-bold text-blue-600">
+                        от {{ number_format($minPrice, 0, ',', ' ') }} ₽
                     </span>
-                    <span class="ml-2 text-green-600 font-semibold">
-                        Экономия {{ number_format($product->compare_price - $product->final_price, 0, ',', ' ') }} ₽
+                    @if($minPrice != $maxPrice)
+                        <span class="text-xl text-gray-600">
+                            до {{ number_format($maxPrice, 0, ',', ' ') }} ₽
+                        </span>
+                    @endif
+                @else
+                    <!-- Если вариантов нет, показываем обычную цену -->
+                    <span class="text-3xl font-bold text-blue-600">
+                        {{ number_format($product->final_price, 0, ',', ' ') }} ₽
                     </span>
+                    @if($product->has_discount)
+                        <span class="text-xl text-gray-500 line-through ml-2">
+                            {{ number_format($product->compare_price, 0, ',', ' ') }} ₽
+                        </span>
+                        <span class="ml-2 text-green-600 font-semibold">
+                            Экономия {{ number_format($product->compare_price - $product->final_price, 0, ',', ' ') }} ₽
+                        </span>
+                    @endif
                 @endif
             </div>
-
-            <!-- Вариации -->
-            @if($product->has_variants && $product->variants->isNotEmpty())
-                <div class="mb-6">
-                    <h3 class="font-semibold mb-3">Доступные варианты:</h3>
-                    <div class="space-y-2">
-                        @foreach($product->variants as $variant)
-    <div class="border rounded p-3">
-        <div class="flex justify-between items-center">
-            <div>
-                <span class="font-medium">{{ $variant->sku }}</span>
-                @if(method_exists($variant, 'attributeValues') && $variant->attributeValues && $variant->attributeValues->isNotEmpty())
-                    <span class="text-sm text-gray-600 ml-2">
-                        ({{ $variant->attributeValues->pluck('value')->implode(', ') }})
-                    </span>
-                @endif
-            </div>
-            <div class="text-right">
-                <span class="text-lg font-bold text-indigo-600">{{ number_format($variant->price, 0, '', ' ') }} ₽</span>
-                @if($variant->old_price && $variant->old_price > $variant->price)
-                    <span class="text-sm text-gray-500 line-through ml-2">{{ number_format($variant->old_price, 0, '', ' ') }} ₽</span>
-                @endif
-                <div class="text-sm text-gray-600 mt-1">
-                    В наличии: {{ $variant->stock_quantity }} шт.
-                </div>
-            </div>
-        </div>
-        <div class="mt-3">
-            <button class="add-to-cart bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-200 w-full" 
-                    data-variant-id="{{ $variant->id }}">
-                Добавить в корзину
-            </button>
-        </div>
-    </div>
-@endforeach
-                    </div>
-                </div>
-            @endif
 
             <!-- Кнопка добавления в корзину -->
             <div class="mb-6">
-                @if($product->in_stock)
-                    <form action="{{ route('cart.add') }}" method="POST" class="flex items-center space-x-4">
-                        @csrf
-                        <input type="hidden" name="product_id" value="{{ $product->id }}">
-                        
-                        <div class="flex items-center border rounded">
-                            <button type="button" class="px-3 py-2" onclick="decreaseQuantity()">-</button>
-                            <input type="number" name="quantity" value="1" min="1" max="10" 
-                                   class="w-16 text-center border-0" id="quantityInput">
-                            <button type="button" class="px-3 py-2" onclick="increaseQuantity()">+</button>
+                @auth
+                    <!-- Для авторизованных пользователей -->
+                    @if($product->has_variants && $product->variants->isNotEmpty())
+                        <!-- Показываем варианты для выбора -->
+                        <div class="mb-6">
+                            <h3 class="font-semibold mb-3">Доступные варианты:</h3>
+                            <div class="space-y-3">
+                                @foreach($product->variants as $variant)
+                                    <div class="border rounded-lg p-4 bg-gray-50">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <div>
+                                                <span class="font-medium text-lg">{{ $variant->sku }}</span>
+                                                @if(method_exists($variant, 'attributeValues') && $variant->attributeValues && $variant->attributeValues->isNotEmpty())
+                                                    <span class="text-sm text-gray-600 ml-2">
+                                                        ({{ $variant->attributeValues->pluck('value')->implode(', ') }})
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-xl font-bold text-indigo-600">
+                                                    {{ number_format($variant->price, 0, '', ' ') }} ₽
+                                                </span>
+                                                @if($variant->old_price && $variant->old_price > $variant->price)
+                                                    <span class="text-sm text-gray-500 line-through ml-2">
+                                                        {{ number_format($variant->old_price, 0, '', ' ') }} ₽
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </div>
+                                        <div class="flex justify-between items-center">
+                                            <div class="text-sm text-gray-600">
+                                                В наличии: {{ $variant->stock_quantity }} шт.
+                                            </div>
+                                            
+											
+											
+											
+											<form action="{{ route('cart.add', $product->id) }}" method="POST" class="flex items-center space-x-4" id="addToCartForm">
+    @csrf
+    <!-- product_id больше не нужен в скрытом поле -->
+    
+    <div class="flex items-center border rounded">
+        <button type="button" class="px-3 py-2" onclick="decreaseQuantity()">-</button>
+        <input type="number" name="quantity" value="1" min="1" max="10" 
+               class="w-16 text-center border-0" id="quantityInput">
+        <button type="button" class="px-3 py-2" onclick="increaseQuantity()">+</button>
+    </div>
+    
+    <button type="submit" 
+            class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-semibold transition duration-200">
+        В корзину
+    </button>
+</form>
+
+
+
+
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
                         </div>
-                        
-                        <button type="submit" 
-                                class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-semibold">
-                            В корзину
-                        </button>
-                    </form>
+                    @else
+                        <!-- Обычный товар без вариантов -->
+                        @if($product->in_stock)
+    <form action="{{ route('cart.add') }}" method="POST" class="flex items-center space-x-4" id="addToCartForm">
+        @csrf
+        <input type="hidden" name="product_id" value="{{ $product->id }}">
+        
+        <div class="flex items-center border rounded">
+            <button type="button" class="px-3 py-2" onclick="decreaseQuantity()">-</button>
+            <input type="number" name="quantity" value="1" min="1" max="10" 
+                   class="w-16 text-center border-0" id="quantityInput">
+            <button type="button" class="px-3 py-2" onclick="increaseQuantity()">+</button>
+        </div>
+        
+        <button type="submit" 
+                class="bg-blue-600 text-white px-8 py-2 rounded-lg hover:bg-blue-700 font-semibold transition duration-200">
+            В корзину
+        </button>
+    </form>
+@else
+    <button disabled class="bg-gray-400 text-white px-8 py-2 rounded-lg font-semibold">
+        Нет в наличии
+    </button>
+@endif
+                    @endif
                 @else
-                    <button disabled class="bg-gray-400 text-white px-8 py-2 rounded-lg font-semibold">
-                        Нет в наличии
-                    </button>
-                @endif
+                    <!-- Для неавторизованных пользователей - ОДНА кнопка -->
+                    <div class="text-center">
+                        <a href="{{ route('login') }}" 
+                           class="inline-block bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-8 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 font-semibold transition duration-200 text-lg">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            Войдите для покупки
+                        </a>
+                        <p class="text-gray-600 mt-2 text-sm">
+                            Авторизуйтесь, чтобы увидеть все варианты и добавить товар в корзину
+                        </p>
+                    </div>
+                @endauth
             </div>
 
             <!-- Краткое описание -->
@@ -241,18 +298,128 @@
 </div>
 
 <script>
-    function increaseQuantity() {
-        const input = document.getElementById('quantityInput');
-        if (parseInt(input.value) < 10) {
-            input.value = parseInt(input.value) + 1;
-        }
+// Удалите дублирующиеся функции в конце файла и оставьте только этот блок
+
+function increaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    if (parseInt(input.value) < 10) {
+        input.value = parseInt(input.value) + 1;
+    }
+}
+
+function decreaseQuantity() {
+    const input = document.getElementById('quantityInput');
+    if (parseInt(input.value) > 1) {
+        input.value = parseInt(input.value) - 1;
+    }
+}
+
+function increaseVariantQuantity(variantId) {
+    const input = document.getElementById('variantQuantity' + variantId);
+    if (parseInt(input.value) < 10) {
+        input.value = parseInt(input.value) + 1;
+    }
+}
+
+function decreaseVariantQuantity(variantId) {
+    const input = document.getElementById('variantQuantity' + variantId);
+    if (parseInt(input.value) > 1) {
+        input.value = parseInt(input.value) - 1;
+    }
+}
+
+// Обработка отправки форм добавления в корзину
+document.addEventListener('DOMContentLoaded', function() {
+    // Обработка для обычных товаров
+    const addToCartForm = document.getElementById('addToCartForm');
+    if (addToCartForm) {
+        addToCartForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            addToCart(this);
+        });
     }
 
-    function decreaseQuantity() {
-        const input = document.getElementById('quantityInput');
-        if (parseInt(input.value) > 1) {
-            input.value = parseInt(input.value) - 1;
+    // Обработка для вариантов товаров
+    const variantForms = document.querySelectorAll('form[action="{{ route('cart.add', $product->id) }}"]');
+    variantForms.forEach(form => {
+        if (form.id !== 'addToCartForm') {
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                addToCart(this);
+            });
         }
-    }
+    });
+
+    // Показываем уведомление если есть flash сообщение
+    @if(session('success'))
+        showNotification('{{ session('success') }}');
+    @endif
+    
+    @if(session('error'))
+        showNotification('{{ session('error') }}', 'error');
+    @endif
+});
+
+function addToCart(form) {
+    const formData = new FormData(form);
+    const submitButton = form.querySelector('button[type="submit"]');
+    const originalText = submitButton.innerHTML;
+
+    // Показываем индикатор загрузки
+    submitButton.innerHTML = 'Добавляем...';
+    submitButton.disabled = true;
+
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification(data.message || 'Товар добавлен в корзину');
+            // Обновляем счетчик корзины в хедере (если есть)
+            updateCartCount(data.cart_count);
+        } else {
+            showNotification(data.message || 'Ошибка при добавлении в корзину', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showNotification('Ошибка при добавлении в корзину', 'error');
+    })
+    .finally(() => {
+        // Восстанавливаем кнопку
+        submitButton.innerHTML = originalText;
+        submitButton.disabled = false;
+    });
+}
+
+function updateCartCount(count) {
+    // Обновляем счетчик корзины в навигации (адаптируйте под ваш layout)
+    const cartCountElements = document.querySelectorAll('.cart-count');
+    cartCountElements.forEach(element => {
+        element.textContent = count;
+    });
+}
+
+function showNotification(message, type = 'success') {
+    // Создаем уведомление
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg ${
+        type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Удаляем уведомление через 3 секунды
+    setTimeout(() => {
+        notification.remove();
+    }, 3000);
+}
 </script>
 @endsection

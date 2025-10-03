@@ -58,6 +58,24 @@
                     <a href="{{ route('pages.contacts') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200">
                         <i class="fas fa-phone mr-1"></i>Контакты
                     </a>
+					
+					<!-- КОРЗИНА - ДОБАВЛЯЕМ ЭТОТ БЛОК -->
+    @auth
+    <a href="{{ route('cart.index') }}" class="text-gray-700 hover:text-blue-600 font-medium transition duration-200 relative">
+        <i class="fas fa-shopping-cart mr-1"></i>Корзина
+        @if($cartCount = \App\Http\Controllers\CartController::getCartCountStatic())
+            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count">
+                {{ $cartCount }}
+            </span>
+        @else
+            <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count" style="display: none;">
+                0
+            </span>
+        @endif
+    </a>
+    @endauth
+					
+					
                 </div>
 
                 <!-- Mobile menu button -->
@@ -83,6 +101,25 @@
                     <a href="{{ route('pages.contacts') }}" class="text-gray-700 hover:text-blue-600 font-medium">
                         <i class="fas fa-phone mr-2"></i>Контакты
                     </a>
+					
+					
+					<!-- КОРЗИНА ДЛЯ МОБИЛЬНОЙ ВЕРСИИ -->
+        @auth
+        <a href="{{ route('cart.index') }}" class="text-gray-700 hover:text-blue-600 font-medium relative">
+            <i class="fas fa-shopping-cart mr-2"></i>Корзина
+            @if($cartCount = \App\Http\Controllers\CartController::getCartCountStatic())
+                <span class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count">
+                    {{ $cartCount }}
+                </span>
+            @else
+                <span class="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center cart-count" style="display: none;">
+                    0
+                </span>
+            @endif
+        </a>
+        @endauth
+					
+					
                 </div>
             </div>
         </nav>

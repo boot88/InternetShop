@@ -7,6 +7,7 @@ use App\Models\CartItem;
 use App\Models\Product;
 use App\Http\Requests\AddToCartRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
@@ -21,62 +22,109 @@ class CartController extends Controller
 
         return view('cart.index', compact('cartItems', 'total'));
     }
+  
+    
+	public static function getCartCountStatic()
+{
+    if (Auth::check()) {
+        $cart = Cart::where('user_id', Auth::id())->first();
+    } else {
+        $sessionId = session()->getId();
+        $cart = Cart::where('session_id', $sessionId)->first();
+    }
+    
+    return $cart ? $cart->items()->sum('quantity') : 0;
+}
+   
+  
+public function add(Request $request, $productId)
+{
+    try {
+        \Log::info('Cart add with ID - Product ID: ' . $productId);
+        \Log::info('Request data:', $request->all());
 
-    public function add(AddToCartRequest $request, $productId)
-    {
-        $product = Product::findOrFail($productId);
+        $quantity = $request->input('quantity', 1);
+
+        if ($quantity < 1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Неверное количество'
+            ], 422);
+        }
+
         $cart = $this->getOrCreateCart();
+        $product = Product::find($productId);
 
-        // Проверяем, есть ли уже этот товар в корзине
-        $existingItem = $cart->items()->where('product_id', $productId)->first();
+        if (!$product) {
+            \Log::error('Product not found with ID: ' . $productId);
+            return response()->json([
+                'success' => false,
+                'message' => 'Товар не найден'
+            ], 404);
+        }
+
+        $existingItem = $cart->items()
+            ->where('product_id', $productId)
+            ->first();
 
         if ($existingItem) {
             $existingItem->update([
-                'quantity' => $existingItem->quantity + $request->quantity
+                'quantity' => $existingItem->quantity + $quantity
             ]);
         } else {
             CartItem::create([
                 'cart_id' => $cart->id,
                 'product_id' => $productId,
-                'quantity' => $request->quantity,
+                'quantity' => $quantity,
                 'price' => $product->final_price
             ]);
         }
 
-        return redirect()->back()->with('success', 'Товар добавлен в корзину');
+        $cartCount = $this->getCartCount();
+
+        return response()->json([
+            'success' => true,
+            'cart_count' => $cartCount,
+            'message' => 'Товар "' . $product->name . '" добавлен в корзину'
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('Cart add error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Ошибка: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     public function update(Request $request, $itemId)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1'
-        ]);
+{
+    $request->validate([
+        'quantity' => 'required|integer|min:1'
+    ]);
 
-        $cartItem = CartItem::where('id', $itemId)
-            ->whereHas('cart', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->firstOrFail();
+    $cart = $this->getOrCreateCart();
+    
+    $cartItem = $cart->items()->where('id', $itemId)->firstOrFail();
 
-        $cartItem->update([
-            'quantity' => $request->quantity
-        ]);
+    $cartItem->update([
+        'quantity' => $request->quantity
+    ]);
 
-        return redirect()->back()->with('success', 'Количество обновлено');
-    }
+    return redirect()->back()->with('success', 'Количество обновлено');
+}
 
     public function remove($itemId)
-    {
-        $cartItem = CartItem::where('id', $itemId)
-            ->whereHas('cart', function ($query) {
-                $query->where('user_id', Auth::id());
-            })
-            ->firstOrFail();
+{
+    $cart = $this->getOrCreateCart();
+    
+    $cartItem = $cart->items()->where('id', $itemId)->firstOrFail();
 
-        $cartItem->delete();
+    $cartItem->delete();
 
-        return redirect()->back()->with('success', 'Товар удален из корзины');
-    }
+    return redirect()->back()->with('success', 'Товар удален из корзины');
+}
 
     public function clear()
     {
@@ -86,32 +134,42 @@ class CartController extends Controller
         return redirect()->back()->with('success', 'Корзина очищена');
     }
 
-    private function getOrCreateCart()
-    {
+   private function getOrCreateCart()
+{
+    if (Auth::check()) {
         $cart = Cart::where('user_id', Auth::id())->first();
-
+        
         if (!$cart) {
             $cart = Cart::create([
                 'user_id' => Auth::id(),
                 'session_id' => session()->getId()
             ]);
         }
-
+        
         return $cart;
     }
 
-    public function getCartCount()
-    {
-        if (!Auth::check()) {
-            return 0;
-        }
-
-        $cart = Cart::where('user_id', Auth::id())->first();
-        
-        if (!$cart) {
-            return 0;
-        }
-
-        return $cart->items()->sum('quantity');
+    // Для гостей
+    $sessionId = session()->getId();
+    $cart = Cart::where('session_id', $sessionId)->first();
+    
+    if (!$cart) {
+        $cart = Cart::create([
+            'session_id' => $sessionId
+        ]);
     }
+    
+    return $cart;
+}
+
+    public function getCartCount()
+{
+    $cart = $this->getOrCreateCart();
+    
+    if (!$cart) {
+        return 0;
+    }
+
+    return $cart->items()->sum('quantity');
+}
 }

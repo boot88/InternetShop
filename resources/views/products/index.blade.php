@@ -341,15 +341,17 @@
                                             @auth
                                                 @if($product->in_stock)
                                                 <form action="{{ route('cart.add', $product->id) }}" method="POST">
-                                                    @csrf
-                                                    <button type="submit" 
-                                                            class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors duration-200 flex items-center">
-                                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                        </svg>
-                                                        В корзину
-                                                    </button>
-                                                </form>
+    @csrf
+    <input type="hidden" name="product_id" value="{{ $product->id }}">
+    <input type="hidden" name="quantity" value="1">
+    <button type="submit" 
+            class="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 font-medium text-sm transition-colors duration-200 flex items-center">
+        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+        </svg>
+        В корзину
+    </button>
+</form>
                                                 @endif
                                             @else
                                                 <a href="{{ route('login') }}" 
@@ -357,10 +359,10 @@
                                                     Войдите чтобы купить
                                                 </a>
                                             @endauth
-                                            <a href="{{ route('products.show', $product->slug) }}" 
+                                            <!--a href="{{ route('products.show', $product->slug) }}" 
                                                class="border border-blue-600 text-blue-600 px-3 py-2 rounded-lg hover:bg-blue-50 font-medium text-sm transition-colors duration-200">
                                                 Подробнее
-                                            </a>
+                                            </a-->
                                         </div>
                                     </div>
                                 </div>
