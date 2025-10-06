@@ -453,10 +453,8 @@
             .then(data => {
                 if (data.success) {
                     showNotification(data.message, 'success');
-                    // Обновляем счетчик корзины - ВАЖНО: принудительно обновляем
+                    // Обновляем счетчик корзины
                     updateCartCount(data.cart_count);
-                    // Дополнительно обновляем через статический метод
-                    updateCartCountFromServer();
                 } else {
                     showNotification(data.message, 'error');
                 }
@@ -493,26 +491,23 @@
         // Обновляем счетчик корзины в навигации
         const cartCountElements = document.querySelectorAll('.cart-count');
         cartCountElements.forEach(element => {
-            element.textContent = count;
+            if (count > 0) {
+                element.textContent = count;
+                element.style.display = 'flex';
+            } else {
+                element.style.display = 'none';
+            }
         });
-    }
-    
-    // Новая функция: обновление счетчика через серверный метод
-    function updateCartCountFromServer() {
-        fetch('/cart/count', {
-            method: 'GET',
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
+        
+        // Также обновляем все элементы с классом cart-count, даже если они скрыты
+        const allCartCounts = document.querySelectorAll('.cart-count');
+        allCartCounts.forEach(element => {
+            element.textContent = count;
+            if (count > 0) {
+                element.style.display = 'flex';
+            } else {
+                element.style.display = 'none';
             }
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.count !== undefined) {
-                updateCartCount(data.count);
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching cart count:', error);
         });
     }
 });

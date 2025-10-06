@@ -19,6 +19,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Страницы
 Route::get('/delivery', [PageController::class, 'delivery'])->name('pages.delivery');
+Route::get('/deals', [PageController::class, 'faq'])->name('pages.deals');
 Route::get('/returns', [PageController::class, 'returns'])->name('pages.returns');
 Route::get('/faq', [PageController::class, 'faq'])->name('pages.faq');
 Route::get('/contacts', [PageController::class, 'contacts'])->name('pages.contacts');
@@ -48,6 +49,8 @@ Route::post('/cart/update/{id}', [CartController::class, 'update'])->name('cart.
 Route::delete('/cart/remove/{id}', [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count', [CartController::class, 'getCartCount'])->name('cart.count');
+//Route::get('/cart/count', [CartController::class, 'getCartCountApi'])->name('cart.count');
+
 
 
 // Маршрут для поиска товаров
