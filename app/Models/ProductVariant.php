@@ -40,7 +40,12 @@ class ProductVariant extends Model
 
     public function attributeValues(): BelongsToMany
     {
-        return $this->belongsToMany(AttributeValue::class, 'product_variant_attributes');
+        return $this->belongsToMany(
+            AttributeValue::class,
+            'product_variant_attributes',
+            'variant_id',
+            'attribute_value_id',
+        );
     }
 
     public function stock(): HasOne

@@ -86,7 +86,7 @@
 
           <form action="{{ route('cart.add', $product->id) }}" method="POST" class="mt-6" data-add-to-cart>
             @csrf
-            @if($product->has_variants)
+            @if($product->uses_variants)
               <label class="block text-sm font-medium text-slate-800">
                 Вариант
                 <select name="variant_id" required class="mt-2 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">

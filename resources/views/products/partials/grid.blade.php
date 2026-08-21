@@ -36,7 +36,7 @@
               {{ number_format($product->final_price, 0, ',', ' ') }} ₽
             </div>
 
-            @if($product->has_variants)
+            @if($product->uses_variants)
               <a href="{{ route('products.show', $product->slug) }}" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Выбрать</a>
             @elseif($product->in_stock)
               <form method="POST" action="{{ route('cart.add', $product->id) }}" data-add-to-cart>

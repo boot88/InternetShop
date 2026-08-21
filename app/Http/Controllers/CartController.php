@@ -45,11 +45,11 @@ class CartController extends Controller
         }
 
         $variant = $this->resolveVariant($product, $request->integer('variant_id'));
-        if ($product->has_variants && !$variant) {
+        if ($product->uses_variants && !$variant) {
             return $this->failure($request, 'Выберите вариант товара.', 422);
         }
 
-        if (!$product->has_variants && $request->filled('variant_id')) {
+        if (!$product->uses_variants && $request->filled('variant_id')) {
             return $this->failure($request, 'У этого товара нет вариантов.', 422);
         }
 

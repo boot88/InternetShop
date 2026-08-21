@@ -25,6 +25,11 @@ class AttributeValue extends Model
 
     public function productVariants(): BelongsToMany
     {
-        return $this->belongsToMany(ProductVariant::class, 'product_variant_attributes');
+        return $this->belongsToMany(
+            ProductVariant::class,
+            'product_variant_attributes',
+            'attribute_value_id',
+            'variant_id',
+        );
     }
 }

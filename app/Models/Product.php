@@ -82,7 +82,7 @@ class Product extends Model
 
     public function getFinalPriceAttribute()
     {
-        if ($this->has_variants && $this->variants->isNotEmpty()) {
+        if ($this->uses_variants) {
             return $this->variants->where('is_active', true)->min('price') ?? $this->price;
         }
         
@@ -92,7 +92,7 @@ class Product extends Model
 
     public function getHasDiscountAttribute()
     {
-        if ($this->has_variants) {
+        if ($this->uses_variants) {
             return $this->variants->contains(function ($variant) {
                 return $variant->is_active && $variant->has_discount;
             });
@@ -113,7 +113,7 @@ class Product extends Model
 
     public function getInStockAttribute(): bool
     {
-        if ($this->has_variants) {
+        if ($this->uses_variants) {
             return $this->variants->contains(function ($variant) {
                 return $variant->is_active && $variant->stock && $variant->stock->in_stock;
             });
@@ -124,13 +124,22 @@ class Product extends Model
 
     public function getStockQuantityAttribute()
     {
-        if ($this->has_variants) {
+        if ($this->uses_variants) {
             return $this->variants->sum(function ($variant) {
                 return $variant->is_active && $variant->stock ? $variant->stock->quantity : 0;
             });
         }
         
         return $this->stock ? $this->stock->quantity : 0;
+    }
+
+    /**
+     * A few imported products have has_variants=1 but no variant records yet.
+     * Until variants are actually entered, they must work as regular products.
+     */
+    public function getUsesVariantsAttribute(): bool
+    {
+        return $this->has_variants && $this->variants->isNotEmpty();
     }
 
     public function scopeActive($query)

@@ -18,7 +18,7 @@
         </a>
         <div class="flex items-center justify-between gap-2 px-4 pb-4">
           <div><span class="text-base font-semibold text-slate-950">{{ number_format($product->final_price, 0, ',', ' ') }} ₽</span>@if($product->has_discount)<span class="ml-1 text-xs text-slate-400 line-through">{{ number_format($product->compare_price, 0, ',', ' ') }} ₽</span>@endif</div>
-          @if($product->has_variants)
+          @if($product->uses_variants)
             <a href="{{ route('products.show', $product->slug) }}" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Выбрать</a>
           @elseif($product->in_stock)
             <form method="POST" action="{{ route('cart.add', $product) }}" data-add-to-cart>@csrf<button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">В корзину</button></form>
