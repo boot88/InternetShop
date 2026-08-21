@@ -1,498 +1,821 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
-	<link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 
-    <title>{{ config('app.name', 'Laravel') }} - Интернет-магазин</title>
+  <title>{{ config('app.name', 'TechZone') }} — интернет-магазин электроники</title>
 
-    <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.bunny.net">
-    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+  <!-- Tailwind CDN (работает и на хостинге без npm/vite) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
-    <!-- Styles -->
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
-    <style>
-        .hero-section {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-        }
-        .product-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
-        }
-        .category-badge {
-            background: rgba(102, 126, 234, 0.1);
-            color: #667eea;
-        }
-    </style>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.bunny.net">
+  <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+  <style>
+    html { scroll-behavior: smooth; }
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    .line-clamp-3 {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+  </style>
 </head>
-<body class="font-sans antialiased">
-    <!-- Header -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <nav class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <!-- Logo -->
-                <div class="flex items-center">
-                    <a href="{{ url('/') }}" class="flex items-center space-x-2">
-                        <svg class="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20 7h-4V5c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zM10 5h4v2h-4V5zm10 14H4V9h16v10z"/>
-                        </svg>
-                        <span class="text-xl font-bold text-gray-900">{{ config('app.name', 'Laravel Store') }}</span>
-                    </a>
-                </div>
 
-                <!-- Navigation -->
-                <div class="flex items-center space-x-8">
-                    <a href="{{ url('/') }}" class="text-gray-700 hover:text-indigo-600 font-medium">Главная</a>
-                    <a href="{{ route('products.index') }}" class="text-gray-700 hover:text-indigo-600 font-medium">Каталог</a>
-                    
-                    <!-- Search -->
-<div class="relative">
-    <form action="{{ route('products.index') }}" method="GET" class="flex">
-        <input type="text" 
-            name="search" 
-            placeholder="Поиск товаров..." 
-            value="{{ request('search') }}"
-            class="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 w-64">
-        <button type="submit" class="ml-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-            Найти
-        </button>
-        <svg class="w-5 h-5 text-gray-400 absolute left-3 top-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-        </svg>
-    </form>
-</div>
+<body class="font-sans antialiased bg-slate-50 text-slate-900 overflow-x-hidden">
 
-                    <!-- Auth Links -->
-                    <div class="flex items-center space-x-4">
-                        @auth
-                            
-							
-							<!-- Cart Icon -->
-                            <a href="{{ route('cart.index') }}" class="relative text-gray-700 hover:text-indigo-600">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-                                </svg>
-                                <span class="absolute -top-2 -right-2 bg-indigo-600 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                                    {{ App\Http\Controllers\CartController::getCartCountStatic() }}
-                                </span>
-                            </a>
-
-
-
-                            <!-- User Dropdown -->
-                            <div class="relative" x-data="{ open: false }">
-                                <button @click="open = !open" class="flex items-center space-x-2 text-gray-700 hover:text-indigo-600">
-                                    <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                        <span class="text-indigo-600 font-medium">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
-                                    </div>
-                                    <span>{{ Auth::user()->name }}</span>
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </button>
-
-                                <div x-show="open" @click.away="open = false" 
-                                     class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                                    <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Профиль</a>
-                                    <a href="{{ route('orders.index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Мои заказы</a>
-                                    <hr>
-                                    <form method="POST" action="{{ route('logout') }}">
-                                        @csrf
-                                        <button type="submit" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                            Выйти
-                                        </button>
-                                    </form>
-                                </div>
-                            </div>
-                        @else
-                            <a href="{{ route('login') }}" class="text-gray-700 hover:text-indigo-600 font-medium">Войти</a>
-                            <a href="{{ route('register') }}" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition duration-200">
-                                Регистрация
-                            </a>
-                        @endauth
-                    </div>
-                </div>
-            </div>
-        </nav>
-    </header>
-
-    <!-- Hero Section -->
-    <section class="hero-section">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-            <div class="text-center">
-                <h1 class="text-4xl md:text-6xl font-bold mb-6">Добро пожаловать в наш магазин</h1>
-                <p class="text-xl md:text-2xl mb-8 opacity-90">Лучшие товары по доступным ценам</p>
-                <div class="space-x-4">
-                    <a href="{{ route('products.index') }}" 
-                       class="bg-white text-indigo-600 px-8 py-3 rounded-lg font-medium hover:bg-gray-100 transition duration-200 inline-block">
-                        Начать покупки
-                    </a>
-                    @guest
-                    <a href="{{ route('register') }}" 
-                       class="border border-white text-white px-8 py-3 rounded-lg font-medium hover:bg-white hover:text-indigo-600 transition duration-200 inline-block">
-                        Создать аккаунт
-                    </a>
-                    @endguest
-                </div>
-            </div>
+  <!-- Topbar -->
+  <div class="hidden md:block border-b bg-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between py-2 text-sm text-slate-600">
+        <div class="flex items-center gap-4">
+          <span class="inline-flex items-center gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-7-4.35-7-10a7 7 0 0 1 14 0c0 5.65-7 10-7 10z"/><path d="M12 11a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></svg>
+            Новосибирск и область
+          </span>
+          <span class="inline-flex items-center gap-2">
+            <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92V19a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 3 4.18 2 2 0 0 1 5 2h2.09a2 2 0 0 1 2 1.72c.12.86.31 1.7.57 2.5a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.58-1.12a2 2 0 0 1 2.11-.45c.8.26 1.64.45 2.5.57A2 2 0 0 1 22 16.92z"/></svg>
+            Поддержка: 8 (800) 122‑37‑37
+          </span>
         </div>
-    </section>
-
-    
-	
-	<!-- Search Results Section -->
-@if(isset($searchQuery) && $searchQuery)
-<section class="py-8 bg-white">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="mb-6">
-            <h2 class="text-2xl font-bold text-gray-900">Результаты поиска: "{{ $searchQuery }}"</h2>
-            <p class="text-gray-600 mt-2">Найдено товаров: {{ $searchResults ? $searchResults->count() : 0 }}</p>
+        <div class="flex items-center gap-4">
+          <a class="hover:text-slate-900" href="{{ route('delivery') }}">Доставка</a>
+          <a class="hover:text-slate-900" href="{{ route('returns') }}">Возврат</a>
+          <a class="hover:text-slate-900" href="{{ route('contacts') }}">Контакты</a>
         </div>
+      </div>
+    </div>
+  </div>
 
-        @if($searchResults && $searchResults->count() > 0)
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @foreach($searchResults as $product)
-            <div class="product-card bg-white rounded-lg shadow-md overflow-hidden">
-                <a href="{{ route('products.show', $product->id) }}">
-                    @php
-                        $productImage = $product->images->first();
-                    @endphp
-                    
-                    @if($productImage && $productImage->image_path)
-                        <img src="{{ $productImage->image_path }}" 
-                             alt="{{ $productImage->alt_text ?? $product->name }}" 
-                             class="w-full h-48 object-cover">
-                    @else
-                        <div class="w-full h-48 bg-gray-100 flex items-center justify-center">
-                            <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                            </svg>
-                        </div>
-                    @endif
-                </a>
-                
-                <div class="p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="category-badge px-2 py-1 rounded text-xs font-medium">
-                            {{ $product->categories->first()->name ?? 'Без категории' }}
-                        </span>
-                        @if($product->brand)
-                        <span class="text-xs text-gray-500">{{ $product->brand->name }}</span>
-                        @endif
-                    </div>
-                    
-                    <a href="{{ route('products.show', $product->id) }}" class="block">
-                        <h3 class="font-semibold text-gray-900 hover:text-indigo-600 mb-2">{{ $product->name }}</h3>
-                    </a>
-                    
-                    <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ Str::limit($product->description, 60) }}</p>
-                    
-                    <div class="flex items-center justify-between">
-                        <span class="text-lg font-bold text-indigo-600">{{ number_format($product->price, 0, ',', ' ') }} ₽</span>
-                        
-                        @auth
-                        <form action="{{ route('cart.add', $product->id) }}" method="POST">
-                            @csrf
-                            <button type="submit" 
-                                    class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 transition duration-200">
-                                В корзину
-                            </button>
-                        </form>
-                        @else
-                        <a href="{{ route('login') }}" 
-                           class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition duration-200">
-                            Войдите чтобы купить
-                        </a>
-                        @endauth
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
-        @elseif($searchQuery)
-        <div class="text-center py-8">
-            <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+  <!-- Header -->
+  <header class="sticky top-0 z-50 border-b bg-white/90 backdrop-blur">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8" x-data="{ mobileOpen:false }">
+      <div class="flex h-16 items-center justify-between gap-3">
+
+        <!-- Left: logo + burger -->
+        <div class="flex items-center gap-3">
+          <button class="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50"
+                  @click="mobileOpen = !mobileOpen" aria-label="Меню">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M4 6h16M4 12h16M4 18h16"/>
             </svg>
-            <h3 class="text-lg font-medium text-gray-900 mb-2">Ничего не найдено</h3>
-            <p class="text-gray-600">Попробуйте изменить поисковый запрос</p>
-        </div>
-        @endif
-    </div>
-</section>
-@endif
-	
+          </button>
 
-
-    <!-- Featured Categories -->
-<section class="py-16 bg-gray-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900">Популярные категории</h2>
-            <p class="text-gray-600 mt-4">Выберите интересующую вас категорию</p>
+          <a href="{{ url('/') }}" class="flex items-center gap-2">
+            <div class="h-10 w-10 rounded-2xl bg-gradient-to-br from-indigo-600 to-fuchsia-600"></div>
+            <div class="leading-tight">
+              <div class="text-base font-semibold tracking-tight">{{ config('app.name', 'TechZone') }}</div>
+              <div class="hidden sm:block text-xs text-slate-500">Электроника • Гарантия • Доставка</div>
+            </div>
+          </a>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            @if(isset($featuredCategories) && $featuredCategories->count() > 0)
-                @foreach($featuredCategories as $category)
-                <a href="{{ route('products.index', ['category' => $category->id]) }}" 
-                   class="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-lg transition duration-200">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4V8h16v12z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold text-gray-900">{{ $category->name }}</h3>
-                    <p class="text-sm text-gray-600 mt-2">{{ $category->products_count }} товаров</p>
-                </a>
-                @endforeach
-            @else
-                <!-- Заглушки для категорий -->
-                @foreach(['Электроника', 'Одежда', 'Книги', 'Спорт'] as $index => $categoryName)
-                <div class="bg-white rounded-lg shadow-md p-6 text-center">
-                    <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8 text-indigo-600" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M20 6h-4V4c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zM10 4h4v2h-4V4zm10 16H4V8h16v12z"/>
-                        </svg>
-                    </div>
-                    <h3 class="font-semibold text-gray-900">{{ $categoryName }}</h3>
-                    <p class="text-sm text-gray-600 mt-2">{{ rand(5, 20) }} товаров</p>
+        <!-- Center: search -->
+        <div class="hidden md:block flex-1 max-w-2xl">
+          
+		  <form action="{{ route('products.index') }}" method="GET" class="relative">
+  <input name="search"
+         value="{{ request('search') ?? request('q') }}"
+         placeholder="Поиск: смартфоны, ноутбуки, наушники…"
+         class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-12 text-sm outline-none
+                focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400">
+
+  <button type="submit"
+          class="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
+    Найти
+  </button>
+</form>
+       
+
+	   </div>
+
+        <!-- Right: actions -->
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a href="{{ route('products.index') }}" class="hidden lg:inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-50">
+            Каталог
+          </a>
+
+          <a href="{{ route('cart.index') }}" class="relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50" aria-label="Корзина">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M6 6h15l-1.5 9h-13z"/>
+              <path d="M6 6l-2-2H1"/>
+              <path d="M9 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2zM18 21a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"/>
+            </svg>
+            <span class="absolute -right-1 -top-1 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-indigo-600 px-1 text-xs font-semibold text-white" id="cartCountBadge">
+              {{ App\Http\Controllers\CartController::getCartCountStatic() }}
+            </span>
+          </a>
+
+          @auth
+            <div class="relative" x-data="{ open:false }">
+              <button @click="open = !open" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 hover:bg-slate-50">
+                <div class="grid h-8 w-8 place-items-center rounded-xl bg-indigo-50 text-indigo-700 font-semibold">
+                  {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                 </div>
-                @endforeach
-            @endif
-        </div>
-    </div>
-</section>
+                <span class="hidden sm:block text-sm font-medium max-w-[140px] truncate">{{ Auth::user()->name }}</span>
+                <svg class="h-4 w-4 text-slate-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+              </button>
 
-<!-- Featured Products -->
-<section class="py-16">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="text-center mb-12">
-            <h2 class="text-3xl font-bold text-gray-900">Популярные товары</h2>
-            <p class="text-gray-600 mt-4">Самые востребованные товары этой недели</p>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            @if(isset($featuredProducts) && $featuredProducts->count() > 0)
-                @foreach($featuredProducts as $product)
-                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden">
-                    <a href="{{ route('products.show', $product->id) }}">
-                        @php
-                            // ПРОСТОЙ ЗАПРОС - берем первое попавшееся изображение для товара
-                            $productImage = \App\Models\ProductImage::where('product_id', $product->id)->first();
-                        @endphp
-                        
-                        @if($productImage && $productImage->image_path)
-                            <img src="{{ $productImage->image_path }}" 
-                                 alt="{{ $productImage->alt_text ?? $product->name }}" 
-                                 class="w-full h-48 object-cover"
-                                 onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCwgc2Fucy1zZXJpZiIgZm9udC1zaXplPSIxNCIgZmlsbD0iNmI3MjgwIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBkeT0iLjNlbSI+0J3QtdGCINC40LfQvNC10L3QtdC90LjRjzwvdGV4dD48L3N2Zz4='">
-                        @else
-                            <div class="w-full h-48 bg-gray-100 flex items-center justify-center">
-                                <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                </svg>
-                            </div>
-                        @endif
-                    </a>
-                    
-                    <!-- Остальной код товара без изменений -->
-                    <div class="p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="category-badge px-2 py-1 rounded text-xs font-medium">
-                                @php
-                                    $category = \App\Models\Category::join('category_product', 'categories.id', '=', 'category_product.category_id')
-                                        ->where('category_product.product_id', $product->id)
-                                        ->first();
-                                @endphp
-                                {{ $category->name ?? 'Без категории' }}
-                            </span>
-                            @php
-                                $brand = null;
-                                if (isset($product->brand_id)) {
-                                    $brand = \App\Models\Brand::find($product->brand_id);
-                                }
-                            @endphp
-                            @if($brand)
-                            <span class="text-xs text-gray-500">{{ $brand->name }}</span>
-                            @endif
-                        </div>
-                        
-                        <a href="{{ route('products.show', $product->id) }}" class="block">
-                            <h3 class="font-semibold text-gray-900 hover:text-indigo-600 mb-2">{{ $product->name }}</h3>
-                        </a>
-                        
-                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">{{ Str::limit($product->description, 60) }}</p>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-lg font-bold text-indigo-600">{{ number_format($product->price, 0, ',', ' ') }} ₽</span>
-                            
-                            @auth
-                            <form action="{{ route('cart.add', $product->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" 
-                                        class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 transition duration-200">
-                                    В корзину
-                                </button>
-                            </form>
-                            @else
-                            <a href="{{ route('login') }}" 
-                               class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition duration-200">
-                                Войдите чтобы купить
-                            </a>
-                            @endauth
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            @else
-                <!-- Заглушки для товаров -->
-                @foreach(range(1, 8) as $i)
-                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden">
-                    <div class="w-full h-48 bg-gray-200 flex items-center justify-center">
-                        <svg class="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                        </svg>
-                    </div>
-                    
-                    <div class="p-4">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="category-badge px-2 py-1 rounded text-xs font-medium">
-                                Категория {{ $i }}
-                            </span>
-                            <span class="text-xs text-gray-500">Бренд {{ $i }}</span>
-                        </div>
-                        
-                        <h3 class="font-semibold text-gray-900 mb-2">Пример товара {{ $i }}</h3>
-                        
-                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">Это пример описания товара, который будет отображаться на главной странице.</p>
-                        
-                        <div class="flex items-center justify-between">
-                            <span class="text-lg font-bold text-indigo-600">{{ number_format(rand(1000, 10000), 0, ',', ' ') }} ₽</span>
-                            
-                            @auth
-                            <button class="bg-indigo-600 text-white px-3 py-1 rounded text-sm hover:bg-indigo-700 transition duration-200">
-                                В корзину
-                            </button>
-                            @else
-                            <a href="{{ route('login') }}" 
-                               class="bg-gray-200 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-300 transition duration-200">
-                                Войдите чтобы купить
-                            </a>
-                            @endauth
-                        </div>
-                    </div>
-                </div>
-                @endforeach
-            @endif
-        </div>
-
-        <div class="text-center mt-8">
-            <a href="{{ route('products.index') }}" 
-               class="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition duration-200">
-                Смотреть все товары
+              <div x-show="open" x-transition @click.away="open=false" class="absolute right-0 mt-2 w-52 overflow-hidden rounded-2xl border bg-white shadow-lg">
+                <a href="{{ route('profile.edit') }}" class="block px-4 py-3 text-sm hover:bg-slate-50">Профиль</a>
+                <a href="{{ route('orders.index') }}" class="block px-4 py-3 text-sm hover:bg-slate-50">Мои заказы</a>
+                <div class="h-px bg-slate-100"></div>
+                <form method="POST" action="{{ route('logout') }}">
+                  @csrf
+                  <button type="submit" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50">Выйти</button>
+                </form>
+              </div>
+            </div>
+          @else
+            <a href="{{ route('login') }}" class="sm:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 hover:bg-slate-50" aria-label="Войти или зарегистрироваться">
+              <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M20 21a8 8 0 0 0-16 0"/>
+                <circle cx="12" cy="8" r="4"/>
+              </svg>
             </a>
+            <a href="{{ route('login') }}" class="hidden sm:inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-slate-50">Войти</a>
+            <a href="{{ route('register') }}" class="hidden sm:inline-flex rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Регистрация</a>
+          @endauth
         </div>
+      </div>
+
+      <!-- Mobile: search + menu -->
+      <div class="md:hidden pb-3">
+        <form action="{{ route('products.index') }}" method="GET" class="relative">
+          <input type="text" name="search" value="{{ request('search') }}" placeholder="Поиск товаров…"
+                 class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-11 py-3 text-sm outline-none focus:border-indigo-300 focus:ring-4 focus:ring-indigo-100" />
+          <svg class="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+        </form>
+
+        <div x-show="mobileOpen" x-transition class="mt-3 grid gap-2 rounded-2xl border border-slate-200 bg-white p-3">
+          <a class="rounded-xl px-3 py-2 text-sm font-medium hover:bg-slate-50" href="{{ url('/') }}">Главная</a>
+          <a class="rounded-xl px-3 py-2 text-sm font-medium hover:bg-slate-50" href="{{ route('products.index') }}">Каталог</a>
+          <a class="rounded-xl px-3 py-2 text-sm font-medium hover:bg-slate-50" href="{{ route('delivery') }}">Доставка</a>
+          <a class="rounded-xl px-3 py-2 text-sm font-medium hover:bg-slate-50" href="{{ route('returns') }}">Возврат</a>
+          <a class="rounded-xl px-3 py-2 text-sm font-medium hover:bg-slate-50" href="{{ route('contacts') }}">Контакты</a>
+        </div>
+      </div>
+
     </div>
-</section>
+  </header>
 
-    <!-- Features Section -->
-    <section class="py-16 bg-gray-900 text-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Бесплатная доставка</h3>
-                    <p class="text-gray-300">При заказе от 5000 рублей</p>
-                </div>
-                
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Гарантия качества</h3>
-                    <p class="text-gray-300">Все товары проверены</p>
-                </div>
-                
-                <div class="text-center">
-                    <div class="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <h3 class="text-xl font-semibold mb-2">Поддержка 24/7</h3>
-                    <p class="text-gray-300">Всегда готовы помочь</p>
-                </div>
+  <!-- Hero -->
+  <section class="relative overflow-hidden">
+    <div class="absolute inset-0 bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600"></div>
+    <div class="absolute inset-0 opacity-15" style="background-image: radial-gradient(circle at 20% 20%, white 2px, transparent 2px), radial-gradient(circle at 80% 40%, white 2px, transparent 2px); background-size: 44px 44px;"></div>
+
+    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid gap-10 py-12 md:grid-cols-2 md:py-16">
+        <div class="text-white">
+          <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm">
+            <span class="h-2 w-2 rounded-full bg-emerald-300"></span>
+            Хиты, новинки и акции — каждый день
+          </div>
+          <h1 class="mt-5 text-3xl font-semibold tracking-tight sm:text-4xl md:text-5xl">
+            Электроника, которую приятно покупать
+          </h1>
+          <p class="mt-4 max-w-xl text-white/90 sm:text-lg">
+            Смартфоны, ноутбуки, аксессуары и техника для дома. Быстрая доставка, гарантия и поддержка.
+          </p>
+
+          <div class="mt-7 flex flex-col gap-3 sm:flex-row">
+            <a href="{{ route('products.index') }}" class="inline-flex items-center justify-center rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-indigo-700 hover:bg-slate-50">
+              Перейти в каталог
+            </a>
+            <a href="#deals" class="inline-flex items-center justify-center rounded-2xl border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white hover:bg-white/15">
+              Смотреть акции
+            </a>
+          </div>
+
+          <div class="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div class="rounded-2xl bg-white/10 p-4">
+              <div class="text-2xl font-semibold">1–2 дня</div>
+              <div class="text-sm text-white/80">доставка по городу</div>
             </div>
+            <div class="rounded-2xl bg-white/10 p-4">
+              <div class="text-2xl font-semibold">14 дней</div>
+              <div class="text-sm text-white/80">на возврат</div>
+            </div>
+            <div class="rounded-2xl bg-white/10 p-4">
+              <div class="text-2xl font-semibold">Гарантия</div>
+              <div class="text-sm text-white/80">на всю технику</div>
+            </div>
+          </div>
         </div>
-    </section>
 
-    <!-- Footer -->
-    <footer class="bg-gray-800 text-white py-12">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+        <div class="md:pl-8">
+          <div class="rounded-3xl bg-white/10 p-5 ring-1 ring-white/20">
+            <div class="rounded-2xl bg-white p-5 shadow-xl">
+              <div class="flex items-center justify-between">
                 <div>
-                    <h3 class="text-lg font-semibold mb-4">{{ config('app.name', 'Laravel Store') }}</h3>
-                    <p class="text-gray-400">Лучший интернет-магазин с широким ассортиментом товаров</p>
+                  <div class="text-sm text-slate-500">Подборка дня</div>
+                  <div class="text-lg font-semibold">Лучшие предложения</div>
                 </div>
-                
-                <div>
-    <h4 class="font-semibold mb-4">Каталог</h4>
-    <ul class="space-y-2 text-gray-400">
-        @if(isset($categories) && $categories->count() > 0)
-            @foreach($categories as $category)
-            <li><a href="{{ route('products.index', ['category' => $category->id]) }}" class="hover:text-white">{{ $category->name }}</a></li>
-            @endforeach
-        @else
-            <li><a href="#" class="hover:text-white">Электроника</a></li>
-            <li><a href="#" class="hover:text-white">Одежда</a></li>
-            <li><a href="#" class="hover:text-white">Книги</a></li>
-            <li><a href="#" class="hover:text-white">Спорт</a></li>
-        @endif
-    </ul>
-</div>
-                
-                <div>
-                        <h4 class="font-semibold mb-4">Помощь</h4>
-                        <ul class="space-y-2 text-gray-400">
-                        <li><a href="{{ route('pages.delivery') }}" class="hover:text-white">Доставка и оплата</a></li>
-                        <li><a href="{{ route('pages.returns') }}" class="hover:text-white">Возврат товара</a></li>
-                        <li><a href="{{ route('pages.faq') }}" class="hover:text-white">Частые вопросы</a></li>
-                        <li><a href="{{ route('pages.contacts') }}" class="hover:text-white">Контакты</a></li>
-                        </ul>
+                <div class="rounded-2xl bg-indigo-50 px-3 py-2 text-sm font-semibold text-indigo-700">-10% на аксессуары</div>
+              </div>
+
+              <div class="mt-4 grid grid-cols-2 gap-3">
+                <a href="{{ route('products.index', ['category' => '1']) }}" class="group overflow-hidden rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 hover:bg-indigo-50/40">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 group-hover:bg-white">
+                      <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M12 18h.01"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold leading-snug break-words">Смартфоны</div>
+                      <div class="text-xs text-slate-500 leading-snug break-words">хиты сезона</div>
+                    </div>
+                  </div>
+                </a>
+
+                <a href="{{ route('products.index', ['category' => '2']) }}" class="group overflow-hidden rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 hover:bg-indigo-50/40">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 group-hover:bg-white">
+                      <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M2 20h20"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold leading-snug break-words">Ноутбуки</div>
+                      <div class="text-xs text-slate-500 leading-snug break-words">для дома и офиса</div>
+                    </div>
+                  </div>
+                </a>
+
+                <a href="{{ route('products.index', ['category' => '20']) }}" class="group overflow-hidden rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 hover:bg-indigo-50/40">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 group-hover:bg-white">
+                      <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold leading-snug break-words">Аудио</div>
+                      <div class="text-xs text-slate-500 leading-snug break-words">наушники и колонки</div>
+                    </div>
+                  </div>
+                </a>
+
+                <a href="{{ route('products.index', ['category' => '4']) }}" class="group overflow-hidden rounded-2xl border border-slate-200 p-4 hover:border-indigo-200 hover:bg-indigo-50/40">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="grid h-10 w-10 place-items-center rounded-2xl bg-slate-100 group-hover:bg-white">
+                      <svg class="h-5 w-5 text-slate-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v8"/><path d="M8 6h8"/><path d="M6 10h12l-1 12H7L6 10z"/></svg>
+                    </div>
+                    <div class="min-w-0">
+                      <div class="text-sm font-semibold leading-snug break-words">Аксессуары</div>
+                      <div class="text-xs text-slate-500 leading-snug break-words">зарядки, чехлы</div>
+                    </div>
+                  </div>
+                </a>
+              </div>
+
+              <div class="mt-5 flex flex-col gap-3 rounded-2xl bg-slate-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="text-sm">
+                  <div class="font-semibold">Нужна помощь с выбором?</div>
+                  <div class="text-slate-600">Подскажем по характеристикам и совместимости.</div>
                 </div>
-                
-                <div>
-                    <h4 class="font-semibold mb-4">Контакты</h4>
-                    <ul class="space-y-2 text-gray-400">
-                        <li>Email: info@store.com</li>
-                        <li>Телефон: +7 (999) 999-99-99</li>
-                        <li>Адрес: г. Москва, ул. Примерная, д. 1</li>
-                    </ul>
-                </div>
+                <a href="{{ route('contacts') }}" class="w-full sm:w-auto text-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800">Связаться</a>
+              </div>
+
             </div>
-            
-            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-                <p>&copy; {{ date('Y') }} {{ config('app.name', 'TechShop') }}. Все права защищены.</p>
-            </div>
+          </div>
         </div>
-    </footer>
 
-    <!-- Alpine.js -->
-    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits -->
+  <section class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+          <div class="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-indigo-50 text-indigo-700">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7h13v10H3z"/><path d="M16 10h4l1 2v5h-5z"/><path d="M7 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM18 17a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/></svg>
+          </div>
+          <div class="font-semibold">Быстрая доставка</div>
+          <div class="mt-1 text-sm text-slate-600">Курьером или в пункт выдачи — как удобно.</div>
+        </div>
+
+        <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+          <div class="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-emerald-50 text-emerald-700">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1l3 5 6 1-4 4 1 6-6-3-6 3 1-6-4-4 6-1z"/></svg>
+          </div>
+          <div class="font-semibold">Официальная гарантия</div>
+          <div class="mt-1 text-sm text-slate-600">Чеки, документы, гарантийное обслуживание.</div>
+        </div>
+
+        <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+          <div class="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-fuchsia-50 text-fuchsia-700">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V6l-8-4-8 4v6c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-5"/></svg>
+          </div>
+          <div class="font-semibold">Проверка перед отправкой</div>
+          <div class="mt-1 text-sm text-slate-600">Комплектация, упаковка, контроль качества.</div>
+        </div>
+
+        <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+          <div class="mb-3 grid h-12 w-12 place-items-center rounded-2xl bg-slate-100 text-slate-800">
+            <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
+          </div>
+          <div class="font-semibold">Поддержка</div>
+          <div class="mt-1 text-sm text-slate-600">Поможем выбрать, настроить, оформить заказ.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Deals / Featured products -->
+  <section id="deals" class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="flex items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-semibold tracking-tight">Популярное и выгодное</h2>
+          <p class="mt-1 text-slate-600">Подборка товаров, которые чаще всего покупают.</p>
+        </div>
+        <a href="{{ route('products.index') }}" class="hidden sm:inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-white">
+          Весь каталог
+        </a>
+      </div>
+
+      @php
+        // Если контроллер не отдаёт данные — просто покажем пустую сетку с подсказкой.
+        $popular = $popularProducts ?? collect();
+        $new     = $newProducts ?? collect();
+        $sale    = $saleProducts ?? collect();
+      @endphp
+
+      {{-- Популярные --}}
+@if($popular->count())
+  <div class="mt-6">
+    <div class="flex items-end justify-between gap-4">
+      <div>
+        <h2 class="text-2xl font-semibold tracking-tight">Популярные товары</h2>
+        <p class="mt-1 text-slate-600">Чаще всего покупают (по заказам).</p>
+      </div>
+      <a href="{{ route('products.index') }}" class="hidden sm:inline-flex rounded-xl border border-slate-200 px-4 py-2 text-sm font-medium hover:bg-white">
+        Весь каталог
+      </a>
+    </div>
+
+    <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      @foreach($popular as $product)
+        @php $img = $product->images->sortByDesc('is_main')->sortBy('order')->first(); @endphp
+        {{-- карточка (оставь твою текущую разметку, только с правками slug + img) --}}
+        <div class="group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 hover:shadow-md transition">
+          <a href="{{ route('products.show', $product->slug) }}" class="block">
+            <div class="aspect-[4/3] bg-slate-50">
+              @if($img)
+                <img src="{{ method_exists($img, 'getUrl') ? $img->getUrl() : $img->image_path }}" alt="{{ $img->alt_text ?? $product->name }}" class="h-full w-full object-cover" loading="lazy" />
+              @else
+                <div class="h-full w-full grid place-items-center">
+                  <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5a2 2 0 0 1 3 0l2 2"/><path d="M14 13l1-1a2 2 0 0 1 3 0l3 3"/></svg>
+                </div>
+              @endif
+            </div>
+            <div class="p-4">
+              <div class="flex items-center justify-between gap-2 min-w-0">
+                <div class="min-w-0 flex-1 text-xs text-slate-500 truncate">
+                  {{ $product->brand->name ?? ($product->categories->first()->name ?? 'Товар') }}
+                </div>
+                <span class="inline-flex rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">в наличии</span>
+              </div>
+              <div class="mt-2 text-sm font-semibold group-hover:text-indigo-700 line-clamp-2">{{ $product->name }}</div>
+              <div class="mt-3 flex items-center justify-between">
+                <div class="text-lg font-semibold text-slate-900">{{ number_format($product->price, 0, ',', ' ') }} ₽</div>
+                <form method="POST" action="{{ route('cart.add', $product->id) }}" class="inline" data-add-to-cart>
+                  @csrf
+                  <button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
+                    В корзину
+                  </button>
+                </form>
+              </div>
+            </div>
+          </a>
+        </div>
+      @endforeach
+    </div>
+  </div>
+@endif
+
+{{-- Новинки --}}
+@if($new->count())
+  <div class="mt-10">
+    <div>
+      <h2 class="text-2xl font-semibold tracking-tight">Новинки</h2>
+      <p class="mt-1 text-slate-600">Свежие поступления.</p>
+    </div>
+
+    <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      @foreach($new as $product)
+        @php $img = $product->images->sortByDesc('is_main')->sortBy('order')->first(); @endphp
+        {{-- та же карточка --}}
+        <div class="group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 hover:shadow-md transition">
+          <a href="{{ route('products.show', $product->slug) }}" class="block">
+            <div class="aspect-[4/3] bg-slate-50">
+              @if($img)
+                <img src="{{ method_exists($img, 'getUrl') ? $img->getUrl() : $img->image_path }}" alt="{{ $img->alt_text ?? $product->name }}" class="h-full w-full object-cover" loading="lazy" />
+              @else
+                <div class="h-full w-full grid place-items-center">
+                  <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5a2 2 0 0 1 3 0l2 2"/><path d="M14 13l1-1a2 2 0 0 1 3 0l3 3"/></svg>
+                </div>
+              @endif
+            </div>
+            <div class="p-4">
+              <div class="flex items-center justify-between gap-2 min-w-0">
+                <div class="min-w-0 flex-1 text-xs text-slate-500 truncate">
+                  {{ $product->brand->name ?? ($product->categories->first()->name ?? 'Товар') }}
+                </div>
+                <span class="inline-flex rounded-full bg-indigo-50 px-2 py-1 text-[11px] font-semibold text-indigo-700">новинка</span>
+              </div>
+              <div class="mt-2 text-sm font-semibold group-hover:text-indigo-700 line-clamp-2">{{ $product->name }}</div>
+              <div class="mt-3 flex items-center justify-between">
+                <div class="text-lg font-semibold text-slate-900">{{ number_format($product->price, 0, ',', ' ') }} ₽</div>
+                <form method="POST" action="{{ route('cart.add', $product->id) }}" class="inline" data-add-to-cart>
+                  @csrf
+                  <button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">В корзину</button>
+                </form>
+              </div>
+            </div>
+          </a>
+        </div>
+      @endforeach
+    </div>
+  </div>
+@endif
+
+{{-- Акции --}}
+@if($sale->count())
+  <div class="mt-10">
+    <div>
+      <h2 class="text-2xl font-semibold tracking-tight">Акции</h2>
+      <p class="mt-1 text-slate-600">Скидки там, где старая цена больше новой.</p>
+    </div>
+
+    <div class="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+      @foreach($sale as $product)
+        @php $img = $product->images->sortByDesc('is_main')->sortBy('order')->first(); @endphp
+        <div class="group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 hover:shadow-md transition">
+          <a href="{{ route('products.show', $product->slug) }}" class="block">
+            <div class="aspect-[4/3] bg-slate-50 relative">
+              @if($img)
+                <img src="{{ method_exists($img, 'getUrl') ? $img->getUrl() : $img->image_path }}" alt="{{ $img->alt_text ?? $product->name }}" class="h-full w-full object-cover" loading="lazy" />
+              @else
+                <div class="h-full w-full grid place-items-center">
+                  <svg class="h-10 w-10 text-slate-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 16l5-5a2 2 0 0 1 3 0l2 2"/><path d="M14 13l1-1a2 2 0 0 1 3 0l3 3"/></svg>
+                </div>
+              @endif
+              <span class="absolute left-3 top-3 inline-flex rounded-full bg-rose-600 px-2 py-1 text-[11px] font-semibold text-white">скидка</span>
+            </div>
+            <div class="p-4">
+              <div class="flex items-center justify-between gap-2 min-w-0">
+                <div class="min-w-0 flex-1 text-xs text-slate-500 truncate">
+                  {{ $product->brand->name ?? ($product->categories->first()->name ?? 'Товар') }}
+                </div>
+              </div>
+
+              <div class="mt-2 text-sm font-semibold group-hover:text-indigo-700 line-clamp-2">{{ $product->name }}</div>
+
+              <div class="mt-3 flex items-center justify-between">
+                <div>
+                  <div class="text-lg font-semibold text-slate-900">{{ number_format($product->price, 0, ',', ' ') }} ₽</div>
+                  <div class="text-xs text-slate-400 line-through">{{ number_format($product->compare_price, 0, ',', ' ') }} ₽</div>
+                </div>
+                <form method="POST" action="{{ route('cart.add', $product->id) }}" class="inline" data-add-to-cart>
+                  @csrf
+                  <button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">В корзину</button>
+                </form>
+              </div>
+            </div>
+          </a>
+        </div>
+      @endforeach
+    </div>
+  </div>
+@endif
+
+@if(!$popular->count() && !$new->count() && !$sale->count())
+  {{-- твоя текущая заглушка --}}
+  <div class="mt-6 rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-100">
+    <div class="text-sm text-slate-600">
+      На главной обычно показывают <b>популярные товары, новинки и акции</b>. Сейчас данные для витрины не переданы в шаблон.
+    </div>
+    <div class="mt-4">
+      <a href="{{ route('products.index') }}" class="inline-flex rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700">
+        Открыть каталог
+      </a>
+    </div>
+  </div>
+@endif
+
+      <div class="mt-6 sm:hidden">
+        <a href="{{ route('products.index') }}" class="inline-flex w-full justify-center rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold hover:bg-slate-50">
+          Весь каталог
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Newsletter -->
+  <section class="py-10">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div class="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 to-slate-800 p-8 text-white ring-1 ring-black/10">
+        <div class="grid gap-6 md:grid-cols-2 md:items-center">
+          <div>
+            <h3 class="text-xl font-semibold">Получайте акции и новинки</h3>
+            <p class="mt-2 text-white/80">Без спама: только скидки и полезные подборки.</p>
+          </div>
+          <form class="flex flex-col gap-3 sm:flex-row" action="#" method="POST" onsubmit="event.preventDefault(); alert('Подписка — Оформлена');">
+            <input type="email" required placeholder="email@example.com" class="w-full rounded-2xl bg-white/10 px-4 py-3 text-sm outline-none ring-1 ring-white/15 focus:ring-4 focus:ring-indigo-300/30" />
+            <button class="rounded-2xl bg-white px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100">Подписаться</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="border-t bg-white">
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+      <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <div class="text-base font-semibold">{{ config('app.name', 'TechZone') }}</div>
+          <p class="mt-2 text-sm text-slate-600">Интернет-магазин электроники и аксессуаров.</p>
+          <p class="mt-3 text-xs text-slate-500">© {{ date('Y') }} Все права защищены.</p>
+        </div>
+        <div>
+          <div class="text-sm font-semibold">Покупателям</div>
+          <div class="mt-3 grid gap-2 text-sm">
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('delivery') }}">Доставка</a>
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('returns') }}">Возврат</a>
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('faq') }}">FAQ</a>
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('contacts') }}">Контакты</a>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-semibold">Каталог</div>
+          <div class="mt-3 grid gap-2 text-sm">
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('products.index') }}">Все товары</a>
+            <a class="text-slate-600 hover:text-slate-900" href="{{ route('deals') }}">Акции</a>
+          </div>
+        </div>
+        <div>
+          <div class="text-sm font-semibold">Поддержка</div>
+          <div class="mt-3 text-sm text-slate-600">
+            <div>Тел.: 8 (800) 122‑37‑37</div>
+            <div class="mt-1">Email: support@Marketing.com</div>
+            <div class="mt-3 text-xs text-slate-500">* Контакты можно вынести через администратора.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+
+  <!-- Toast -->
+  <div id="toastWrap" class="fixed top-4 right-4 z-[9999] pointer-events-none hidden">
+    <div id="toast" class="pointer-events-auto flex max-w-sm items-start gap-3 rounded-2xl bg-slate-900 text-white px-4 py-3 shadow-lg ring-1 ring-white/10 opacity-0 translate-y-[-8px] transition duration-200">
+      <div class="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white text-sm font-bold" aria-hidden="true">✓</div>
+      <div class="min-w-0 flex-1">
+        <div id="toastMsg" class="text-sm font-medium leading-5">Добавлено</div>
+        <div class="mt-2 flex flex-wrap gap-2">
+          <a id="toastGoCart" href="{{ route('cart.index') }}" class="inline-flex items-center rounded-xl bg-white/10 px-3 py-1.5 text-xs font-semibold hover:bg-white/20">Перейти в корзину</a>
+          <button id="toastClose" type="button" class="inline-flex items-center rounded-xl bg-white/0 px-3 py-1.5 text-xs font-semibold hover:bg-white/10">Закрыть</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+      const badge = document.getElementById('cartCountBadge');
+
+      const wrap = document.getElementById('toastWrap');
+      const toast = document.getElementById('toast');
+      const msgEl = document.getElementById('toastMsg');
+      const closeBtn = document.getElementById('toastClose');
+
+      let toastTimer = null;
+
+      function showToast(message) {
+        if (!wrap || !toast || !msgEl) return;
+        msgEl.textContent = message || 'Готово';
+        wrap.classList.remove('hidden');
+        // animate in
+        requestAnimationFrame(() => {
+          toast.classList.remove('opacity-0', 'translate-y-[-8px]');
+          toast.classList.add('opacity-100', 'translate-y-0');
+        });
+
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(hideToast, 2400);
+      }
+
+      function hideToast() {
+        if (!wrap || !toast) return;
+        toast.classList.add('opacity-0', 'translate-y-[-8px]');
+        toast.classList.remove('opacity-100', 'translate-y-0');
+        setTimeout(() => wrap.classList.add('hidden'), 180);
+      }
+
+      closeBtn?.addEventListener('click', (e) => {
+        e.preventDefault();
+        hideToast();
+      });
+
+      async function postJSON(url, data) {
+        const res = await fetch(url, {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'X-CSRF-TOKEN': csrf,
+            'X-Requested-With': 'XMLHttpRequest',
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(data || {})
+        });
+        return res;
+      }
+
+      function formatRub(n) {
+        try { return new Intl.NumberFormat('ru-RU').format(n) + ' ₽'; }
+        catch(e){ return n + ' ₽'; }
+      }
+
+      function updateBadge(count) {
+        if (badge && count !== undefined && count !== null) badge.textContent = String(count);
+      }
+
+      // ✅ Add-to-cart AJAX (works for any form posting to /cart/add/*)
+      document.addEventListener('submit', async (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+
+        const action = form.getAttribute('action') || '';
+        const isAddToCart = form.hasAttribute('data-add-to-cart') || /\/cart\/add\/\d+/.test(action);
+
+        if (!isAddToCart) return;
+
+        e.preventDefault();
+
+        const btn = form.querySelector('[data-add-to-cart-button], button[type="submit"], input[type="submit"]');
+        const prevText = btn?.textContent;
+        if (btn) { btn.disabled = true; btn.classList.add('opacity-70'); }
+
+        try {
+          const fd = new FormData(form);
+          const res = await fetch(action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            body: fd
+          });
+
+          const data = await res.json().catch(() => null);
+
+          if (res.ok && data && data.success) {
+            updateBadge(data.cart_count);
+            showToast(data.message || 'Добавлено в корзину');
+          } else {
+            showToast((data && (data.message || data.error)) || 'Не удалось добавить в корзину');
+          }
+        } catch (err) {
+          showToast('Ошибка сети при добавлении');
+        } finally {
+          if (btn) { btn.disabled = false; btn.classList.remove('opacity-70'); if (prevText) btn.textContent = prevText; }
+        }
+      }, true);
+
+      // ✅ Cart quantity +/- buttons (no reload)
+      document.addEventListener('click', async (e) => {
+        const btn = e.target.closest('.cart-qty-btn');
+        if (!btn) return;
+
+        const id = btn.getAttribute('data-id');
+        const delta = parseInt(btn.getAttribute('data-delta') || '0', 10);
+        if (!id || !delta) return;
+
+        e.preventDefault();
+
+        const row = document.querySelector(`[data-cart-item-id="${id}"]`);
+        const qtyEl = row?.querySelector(`[data-qty-id="${id}"]`);
+        const price = parseFloat(row?.getAttribute('data-price') || '0');
+
+        const currentQty = parseInt(qtyEl?.textContent || '1', 10) || 1;
+        const nextQty = Math.max(1, currentQty + delta);
+
+        // optimistic UI
+        if (qtyEl) qtyEl.textContent = String(nextQty);
+
+        try {
+          const url = `/cart/update/${id}`;
+          const res = await postJSON(url, { quantity: nextQty });
+
+          const data = await res.json().catch(() => null);
+
+          if (res.ok && data && data.success) {
+            updateBadge(data.cart_count);
+            // update line total
+            const lineEl = row?.querySelector(`[data-item-total-id="${id}"]`);
+            if (lineEl) {
+              const lineTotal = (data.item_total !== undefined) ? data.item_total : (price * nextQty);
+              lineEl.textContent = formatRub(lineTotal);
+            }
+            // update cart total if provided
+            const cartTotalEl = document.getElementById('cartTotal');
+            if (cartTotalEl) {
+              if (data.total !== undefined) cartTotalEl.textContent = formatRub(data.total);
+              else {
+                // fallback: sum line totals
+                const sum = Array.from(document.querySelectorAll('[data-item-total-id]'))
+                  .map(el => parseFloat((el.textContent || '').replace(/[^\d.]/g,'') || '0'))
+                  .reduce((a,b)=>a+b,0);
+                cartTotalEl.textContent = formatRub(sum);
+              }
+            }
+          } else {
+            // rollback on error
+            if (qtyEl) qtyEl.textContent = String(currentQty);
+            showToast((data && (data.message || data.error)) || 'Не удалось обновить количество');
+          }
+        } catch (err) {
+          if (qtyEl) qtyEl.textContent = String(currentQty);
+          showToast('Ошибка сети при обновлении');
+        }
+      });
+
+      // ✅ Remove item (AJAX)
+      document.addEventListener('submit', async (e) => {
+        const form = e.target;
+        if (!(form instanceof HTMLFormElement)) return;
+        const action = form.getAttribute('action') || '';
+        const isRemove = form.hasAttribute('data-cart-remove') || /\/cart\/remove\/\d+/.test(action);
+        const isClear = form.hasAttribute('data-cart-clear') || /\/cart\/clear/.test(action);
+
+        if (!isRemove && !isClear) return;
+
+        e.preventDefault();
+
+        if (isRemove && !confirm('Удалить товар из корзины?')) return;
+        if (isClear && !confirm('Очистить всю корзину?')) return;
+
+        try {
+          const fd = new FormData(form);
+          const res = await fetch(action, {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'X-CSRF-TOKEN': csrf,
+              'X-Requested-With': 'XMLHttpRequest',
+              'Accept': 'application/json'
+            },
+            body: fd
+          });
+          const data = await res.json().catch(() => null);
+
+          if (res.ok && data && data.success) {
+            updateBadge(data.cart_count);
+
+            if (isRemove) {
+              const idMatch = action.match(/\/cart\/remove\/(\d+)/);
+              const id = idMatch ? idMatch[1] : null;
+              const row = id ? document.querySelector(`[data-cart-item-id="${id}"]`) : null;
+              row?.remove();
+            }
+
+            if (isClear) {
+              // simplest: reload to show empty state
+              window.location.reload();
+              return;
+            }
+
+            // update total
+            const cartTotalEl = document.getElementById('cartTotal');
+            if (cartTotalEl && data.total !== undefined) cartTotalEl.textContent = formatRub(data.total);
+
+            showToast(data.message || (isRemove ? 'Удалено' : 'Готово'));
+          } else {
+            showToast((data && (data.message || data.error)) || 'Операция не выполнена');
+          }
+        } catch (err) {
+          showToast('Ошибка сети');
+        }
+      }, true);
+    })();
+  </script>
+
 </body>
 </html>

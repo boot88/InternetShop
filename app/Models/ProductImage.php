@@ -32,12 +32,29 @@ class ProductImage extends Model
      * Get the image URL
      */
     public function getUrl()
-    {
-        if ($this->image_path) {
-            return asset('storage/' . $this->image_path);
-        }
-        
-        // Заглушка для изображения
+{
+    $p = trim((string) $this->image_path);
+
+    if ($p === '') {
         return asset('images/placeholder.jpg');
     }
+
+    // Если в БД уже лежит полный URL (Unsplash/и т.п.) — отдаём его как есть
+    if (preg_match('~^https?://~i', $p)) {
+        return $p;
+    }
+
+    // Если вдруг уже "storage/..."
+    $p = ltrim($p, '/');
+    if (str_starts_with($p, 'storage/')) {
+        return asset($p);
+    }
+
+    // Если "public/..." — убираем public/
+    if (str_starts_with($p, 'public/')) {
+        $p = substr($p, 7);
+    }
+
+    return asset('storage/' . $p);
+}
 }

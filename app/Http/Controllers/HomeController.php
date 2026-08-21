@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -51,12 +52,45 @@ class HomeController extends Controller
             $categories = Category::withCount('products')
                 ->having('products_count', '>', 0)
                 ->get();
+            
+            
+             // Популярные — по order_items (по сумме купленных qty)
+$popularProducts = Product::query()
+    ->with(['categories', 'brand', 'images'])
+    ->active()
+    ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
+    ->select('products.*', DB::raw('COALESCE(SUM(order_items.quantity),0) as sold_qty'))
+    ->groupBy('products.id')
+    ->orderByDesc('sold_qty')
+    ->orderByDesc('products.created_at')
+    ->take(8)
+    ->get();
+
+// Новинки — по created_at desc
+$newProducts = Product::with(['categories', 'brand', 'images'])
+    ->active()
+    ->orderByDesc('created_at')
+    ->take(8)
+    ->get();
+
+// Акции — compare_price > price
+$saleProducts = Product::with(['categories', 'brand', 'images'])
+    ->active()
+    ->whereColumn('compare_price', '>', 'price')
+    ->orderByRaw('(compare_price - price) DESC')
+    ->take(8)
+    ->get();           
+
 
         } catch (\Exception $e) {
             // Если база данных еще не готова, используем заглушки
             $featuredProducts = $this->getDummyProducts();
             $featuredCategories = $this->getDummyCategories();
             $categories = $this->getDummyCategories();
+
+            $popularProducts = $featuredProducts;
+            $newProducts = $featuredProducts;
+            $saleProducts = $featuredProducts;
             
             // Заглушка для поиска
             if ($searchQuery) {
@@ -72,7 +106,10 @@ class HomeController extends Controller
             'featuredCategories', 
             'categories',
             'searchResults',
-            'searchQuery'
+            'searchQuery',
+            'popularProducts',
+            'newProducts',
+            'saleProducts'
         ));
     }
 

@@ -84,14 +84,21 @@
             </div>
 
             <!-- Карта -->
-            <div class="mt-8 bg-gray-200 rounded-lg h-64 flex items-center justify-center">
-                <div class="text-center text-gray-500">
-                    <svg class="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7"/>
-                    </svg>
-                    <p>Карта будет здесь</p>
-                </div>
-            </div>
+            <div class="mt-12">
+    <h2 class="text-xl font-semibold text-slate-900 mb-4">
+        Мы на карте
+    </h2>
+
+    <div class="relative w-full overflow-hidden rounded-2xl border border-slate-200 shadow-sm"
+         style="padding-top: 56.25%;">
+        <iframe
+            src="https://yandex.ru/map-widget/v1/?um=constructor%3A0f6b9c2a4e4e2f5e7f6b0e1a2b3c4d5e6f7a8b9c&amp;source=constructor"
+            class="absolute inset-0 w-full h-full border-0"
+            loading="lazy"
+            referrerpolicy="no-referrer-when-downgrade">
+        </iframe>
+    </div>
+</div>
         </div>
 
         <!-- Форма обратной связи -->
@@ -109,7 +116,7 @@
             </div>
             @endif
 
-            <form action="{{ route('pages.contact-submit') }}" method="POST" class="space-y-6">
+            <form action="{{ route('contact.submit') }}" method="POST" class="space-y-6">
                 @csrf
                 
                 <div class="grid md:grid-cols-2 gap-4">

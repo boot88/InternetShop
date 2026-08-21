@@ -13,9 +13,9 @@
                     <!-- Список товаров -->
                     <div class="space-y-6">
                         @foreach($cartItems as $item)
-                        <div class="flex items-center space-x-4 border-b border-gray-200 pb-6 last:border-b-0">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-gray-200 pb-6 last:border-b-0" data-cart-item-id="{{ $item->id }}" data-price="{{ $item->price }}">
                             <!-- Изображение товара -->
-                            <div class="flex-shrink-0 w-20 h-20">
+                            <div class="flex-shrink-0 w-20 h-20 sm:w-20 sm:h-20">
                                 @if($item->product->images->isNotEmpty())
                                     <img src="{{ $item->product->images->first()->image_path }}" 
                                          alt="{{ $item->product->name }}" 
@@ -30,7 +30,7 @@
                             </div>
 
                             <!-- Информация о товаре -->
-                            <div class="flex-1">
+                            <div class="flex-1 min-w-0">
                                 <h3 class="text-lg font-semibold text-gray-900">
                                     <a href="{{ route('products.show', $item->product->slug) }}" class="hover:text-blue-600">
                                         {{ $item->product->name }}
@@ -42,35 +42,35 @@
                             </div>
 
                             <!-- Количество -->
-                            <div class="flex items-center space-x-2">
-                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="flex items-center">
-                                    @csrf
-                                    @method('POST')
-                                    <button type="button" onclick="this.form.quantity.value = Math.max(1, parseInt(this.form.quantity.value) - 1)" 
-                                            class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-l-lg hover:bg-gray-100">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                                        </svg>
-                                    </button>
-                                    <input type="number" 
-                                           name="quantity" 
-                                           value="{{ $item->quantity }}" 
-                                           min="1" 
-                                           class="w-12 h-8 text-center border-t border-b border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                    <button type="button" onclick="this.form.quantity.value = parseInt(this.form.quantity.value) + 1" 
-                                            class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-r-lg hover:bg-gray-100">
-                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                        </svg>
-                                    </button>
-                                    <button type="submit" class="ml-2 text-blue-600 hover:text-blue-800 text-sm font-medium">
-                                        Обновить
-                                    </button>
-                                </form>
+                            <div class="flex items-center space-x-2 flex-shrink-0">
+                                <button type="button"
+                                        class="cart-qty-btn w-8 h-8 flex items-center justify-center border border-gray-300 rounded-l-lg hover:bg-gray-100"
+                                        data-id="{{ $item->id }}"
+                                        data-delta="-1"
+                                        aria-label="Уменьшить количество">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                    </svg>
+                                </button>
+
+                                <span class="w-12 h-8 inline-flex items-center justify-center border-t border-b border-gray-300"
+                                      data-qty-id="{{ $item->id }}">
+                                    {{ $item->quantity }}
+                                </span>
+
+                                <button type="button"
+                                        class="cart-qty-btn w-8 h-8 flex items-center justify-center border border-gray-300 rounded-r-lg hover:bg-gray-100"
+                                        data-id="{{ $item->id }}"
+                                        data-delta="1"
+                                        aria-label="Увеличить количество">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                    </svg>
+                                </button>
                             </div>
 
                             <!-- Цена -->
-                            <div class="text-right">
+                            <div class="text-left sm:text-right w-full sm:w-auto">
                                 <p class="text-lg font-semibold text-gray-900">
                                     {{ number_format($item->price * $item->quantity, 0, ',', ' ') }} ₽
                                 </p>
@@ -80,12 +80,12 @@
                             </div>
 
                             <!-- Удаление -->
-                            <form action="{{ route('cart.remove', $item->id) }}" method="POST" class="flex-shrink-0">
+                            <form class="flex-shrink-0 self-end sm:self-auto" action="{{ route('cart.remove', $item->id) }}" method="POST" class="flex-shrink-0" data-cart-remove>
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 
                                         class="text-red-600 hover:text-red-800 p-2 rounded-lg hover:bg-red-50 transition-colors duration-200"
-                                        onclick="return confirm('Удалить товар из корзины?')">
+                                       >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
@@ -99,7 +99,7 @@
                     <div class="mt-8 pt-6 border-t border-gray-200">
                         <div class="flex justify-between items-center mb-6">
                             <span class="text-2xl font-bold text-gray-900">Итого:</span>
-                            <span class="text-2xl font-bold text-gray-900">{{ number_format($total, 0, ',', ' ') }} ₽</span>
+                            <span class="text-2xl font-bold text-gray-900" id="cartTotal">{{ number_format($total, 0, ',', ' ') }} ₽</span>
                         </div>
 
                         <!-- Кнопки действий -->
@@ -109,12 +109,12 @@
                                 Продолжить покупки
                             </a>
                             
-                            <form action="{{ route('cart.clear') }}" method="POST" class="flex-1">
+                            <form action="{{ route('cart.clear') }}" method="POST" class="flex-1" data-cart-clear>
                                 @csrf
                                 @method('POST')
                                 <button type="submit" 
                                         class="w-full bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 font-medium transition-colors duration-200"
-                                        onclick="return confirm('Очистить всю корзину?')">
+                                       >
                                     Очистить корзину
                                 </button>
                             </form>
@@ -143,11 +143,4 @@
     </div>
 </div>
 
-@if(session('success'))
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        alert('{{ session('success') }}');
-    });
-</script>
-@endif
 @endsection

@@ -8,93 +8,163 @@ use App\Models\Product;
 use App\Http\Requests\ProductFilterRequest;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\DB;
 
 class ProductController extends Controller
 {
-    public function index(ProductFilterRequest $request): View
-    {
-        try {
-            // Исправляем запрос для категорий
-            $categories = Category::with(['children' => function ($query) {
-                $query->where('is_active', true);
-            }])->whereNull('parent_id')->where('is_active', true)->get();
+   public function index(Request $request)
+{
+    // --- Поиск (верхнее поле "Найти")
+    // поддержим и search=..., и q=... (на всякий случай)
+    
+	//$search = trim((string) ($request->input('search') ?? $request->input('q') ?? ''));
+	
+	$search = trim((string) ($request->input('search') ?? $request->input('q') ?? ''));
 
-            $brands = Brand::where('is_active', true)->get();
+    // --- Текущие выбранные значения
+    $selectedCategory = $request->integer('category') ?: null;
 
-            $products = Product::with(['brand', 'categories', 'images'])
-                ->where('is_active', true);
+    $selectedBrands = collect($request->input('brands', []))
+        ->filter(fn($v) => $v !== null && $v !== '')
+        ->map(fn($v) => (int)$v)
+        ->values()
+        ->all();
 
-            // Фильтр по категории
-            if ($request->filled('category')) {
-                $category = Category::find($request->category);
-                if ($category) {
-                    $categoryIds = $this->getCategoryAndChildrenIds($category);
-                    $products->whereHas('categories', function ($query) use ($categoryIds) {
-                        $query->whereIn('categories.id', $categoryIds);
-                    });
-                }
-            }
+    // --- Базовый запрос ДЛЯ диапазона цен (важно: без price_min/price_max)
+    $rangeQuery = Product::active()
+        ->when($search !== '', function ($q) use ($search) {
+            $q->where(function ($w) use ($search) {
+                $w->where('products.name', 'like', "%{$search}%")
+                  ->orWhere('products.description', 'like', "%{$search}%");
+            });
+        })
+        ->when($selectedCategory, function ($q) use ($selectedCategory) {
+            $q->whereHas('categories', function ($qq) use ($selectedCategory) {
+                $qq->where('categories.id', $selectedCategory);
+            });
+        })
+        ->when(!empty($selectedBrands), function ($q) use ($selectedBrands) {
+            $q->whereIn('brand_id', $selectedBrands);
+        });
 
-            // Фильтр по бренду
-            if ($request->filled('brand')) {
-                $products->where('brand_id', $request->brand);
-            }
+    $priceRange = $rangeQuery
+        ->selectRaw('MIN(price) as min, MAX(price) as max')
+        ->first();
 
-            // Фильтр по цене
-            if ($request->filled('price_min')) {
-                $products->where('price', '>=', $request->price_min);
-            }
+    $rangeMin = (int)($priceRange->min ?? 0);
+    $rangeMax = (int)($priceRange->max ?? 0);
 
-            if ($request->filled('price_max')) {
-                $products->where('price', '<=', $request->price_max);
-            }
+    // --- Текущие значения слайдера
+    $priceMin = $request->has('price_min') ? (int)$request->input('price_min') : $rangeMin;
+    $priceMax = $request->has('price_max') ? (int)$request->input('price_max') : $rangeMax;
 
-            // Поиск
-            if ($request->filled('search')) {
-                $search = $request->search;
-                $products->where(function($query) use ($search) {
-                    $query->where('name', 'like', '%' . $search . '%')
-                          ->orWhere('description', 'like', '%' . $search . '%')
-                          ->orWhere('sku', 'like', '%' . $search . '%');
-                });
-            }
+    // Защита от кривых значений
+    $priceMin = max($rangeMin, min($priceMin, $rangeMax));
+    $priceMax = max($rangeMin, min($priceMax, $rangeMax));
+    if ($priceMin > $priceMax) { [$priceMin, $priceMax] = [$priceMax, $priceMin]; }
 
-            // Сортировка
-            $sort = $request->get('sort', 'name_asc');
-            switch ($sort) {
-                case 'name_desc':
-                    $products->orderBy('name', 'desc');
-                    break;
-                case 'price_asc':
-                    $products->orderBy('price', 'asc');
-                    break;
-                case 'price_desc':
-                    $products->orderBy('price', 'desc');
-                    break;
-                case 'newest':
-                    $products->orderBy('created_at', 'desc');
-                    break;
-                default:
-                    $products->orderBy('name', 'asc');
-            }
+    // --- Базовый запрос товаров
+    $productsQuery = Product::query()
+        ->with(['images', 'brand', 'categories'])
+        ->active()
+        ->when($search !== '', function ($q) use ($search) {
+            $q->where(function ($w) use ($search) {
+                $w->where('products.name', 'like', "%{$search}%")
+                  ->orWhere('products.description', 'like', "%{$search}%");
+            });
+        })
+        ->whereBetween('price', [$priceMin, $priceMax]);
 
-            $products = $products->paginate(12)->withQueryString();
-
-            return view('products.index', compact('products', 'categories', 'brands'));
-
-        } catch (\Exception $e) {
-            // Логируем ошибку и показываем простую страницу
-            \Log::error('Product index error: ' . $e->getMessage());
-            
-            $products = Product::where('is_active', true)->paginate(12);
-            $categories = Category::whereNull('parent_id')->where('is_active', true)->get();
-            $brands = Brand::where('is_active', true)->get();
-            
-            return view('products.index', compact('products', 'categories', 'brands'));
-        }
+    if ($selectedCategory) {
+        $productsQuery->whereHas('categories', function ($q) use ($selectedCategory) {
+            $q->where('categories.id', $selectedCategory);
+        });
     }
-	
-	
+
+    if (!empty($selectedBrands)) {
+        $productsQuery->whereIn('brand_id', $selectedBrands);
+    }
+
+    $products = $productsQuery
+        ->orderByDesc('created_at')
+        ->paginate(12)
+        ->appends($request->query());
+
+    // --- Списки для фильтров
+    $categories = Category::orderBy('name')->get();
+    $brands     = Brand::orderBy('name')->get();
+
+    // --- СЧЁТЧИКИ категорий
+    // учитываем выбранные бренды + цену + поиск, НЕ учитываем выбранную категорию
+    $categoryCounts = Category::query()
+        ->select('categories.id', DB::raw('COUNT(DISTINCT products.id) as cnt'))
+        ->leftJoin('category_product', 'categories.id', '=', 'category_product.category_id')
+        ->leftJoin('products', 'products.id', '=', 'category_product.product_id')
+        ->where('products.is_active', 1)
+        ->when($search !== '', function ($q) use ($search) {
+            $q->where(function ($w) use ($search) {
+                $w->where('products.name', 'like', "%{$search}%")
+                  ->orWhere('products.description', 'like', "%{$search}%");
+            });
+        })
+        ->whereBetween('products.price', [$priceMin, $priceMax])
+        ->when(!empty($selectedBrands), function ($q) use ($selectedBrands) {
+            $q->whereIn('products.brand_id', $selectedBrands);
+        })
+        ->groupBy('categories.id')
+        ->pluck('cnt', 'categories.id');
+
+    // --- СЧЁТЧИКИ брендов
+    // учитываем выбранную категорию + цену + поиск, НЕ учитываем выбранные бренды
+    $brandCounts = Brand::query()
+        ->select('brands.id', DB::raw('COUNT(DISTINCT products.id) as cnt'))
+        ->leftJoin('products', 'brands.id', '=', 'products.brand_id')
+        ->where('products.is_active', 1)
+        ->when($search !== '', function ($q) use ($search) {
+            $q->where(function ($w) use ($search) {
+                $w->where('products.name', 'like', "%{$search}%")
+                  ->orWhere('products.description', 'like', "%{$search}%");
+            });
+        })
+        ->whereBetween('products.price', [$priceMin, $priceMax])
+        ->when($selectedCategory, function ($q) use ($selectedCategory) {
+            $q->whereExists(function ($sub) use ($selectedCategory) {
+                $sub->select(DB::raw(1))
+                    ->from('category_product')
+                    ->whereColumn('category_product.product_id', 'products.id')
+                    ->where('category_product.category_id', $selectedCategory);
+            });
+        })
+        ->groupBy('brands.id')
+        ->pluck('cnt', 'brands.id');
+
+    // --- AJAX ответ: обновляем grid + filters
+    if ($request->ajax()) {
+        return response()->json([
+            'filtersHtml' => view('products.partials.filters', compact(
+                'categories', 'brands', 'categoryCounts', 'brandCounts',
+                'rangeMin', 'rangeMax', 'priceMin', 'priceMax', 'selectedCategory', 'selectedBrands', 'search'
+            ))->render(),
+            'gridHtml' => view('products.partials.grid', compact('products'))->render(),
+        ]);
+    }
+
+    // --- Обычный рендер
+    return view('products.index', compact(
+        'products',
+        'categories',
+        'brands',
+        'categoryCounts',
+        'brandCounts',
+        'rangeMin',
+        'rangeMax',
+        'priceMin',
+        'priceMax',
+        'selectedCategory',
+        'selectedBrands',
+        'search'
+    ));
+}
 	
 	
 
@@ -157,31 +227,19 @@ class ProductController extends Controller
      * Поиск товаров
      */
     public function search(Request $request)
-    {
-        $searchQuery = $request->input('q');
-        
-        // Если запрос пустой, перенаправляем на страницу товаров
-        if (empty($searchQuery)) {
-            return redirect()->route('products.index');
-        }
+{
+    $q = trim((string) $request->input('q', ''));
 
-        // Поиск товаров по названию и описанию
-        $products = Product::where('name', 'LIKE', "%{$searchQuery}%")
-            ->orWhere('description', 'LIKE', "%{$searchQuery}%")
-            ->orWhereHas('categories', function($query) use ($searchQuery) {
-                $query->where('name', 'LIKE', "%{$searchQuery}%");
-            })
-            ->orWhereHas('brand', function($query) use ($searchQuery) {
-                $query->where('name', 'LIKE', "%{$searchQuery}%");
-            })
-            ->with(['images', 'categories', 'brand'])
-            ->paginate(12);
-
-        // Получаем категории для фильтрации (если нужно)
-        $categories = Category::withCount('products')->get();
-
-        return view('products.index', compact('products', 'categories', 'searchQuery'));
+    // пусто — просто в каталог
+    if ($q === '') {
+        return redirect()->route('products.index');
     }
+
+    // ВАЖНО: редиректим на index, чтобы все переменные (rangeMin/rangeMax/brands/счётчики/AJAX) были как надо
+    return redirect()->route('products.index', [
+        'search' => $q, // приводим к единому параметру
+    ]);
+}
 	
 	
 }

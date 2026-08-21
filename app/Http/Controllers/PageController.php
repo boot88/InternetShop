@@ -13,7 +13,7 @@ class PageController extends Controller
             'title' => 'Доставка и оплата',
             'breadcrumbs' => [
                 ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Доставка и оплата', 'url' => route('pages.delivery')]
+                ['name' => 'Доставка и оплата', 'url' => route('delivery')]
             ]
         ]);
     }
@@ -24,7 +24,7 @@ class PageController extends Controller
             'title' => 'Возврат товара',
             'breadcrumbs' => [
                 ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Возврат товара', 'url' => route('pages.returns')]
+                ['name' => 'Возврат товара', 'url' => route('returns')]
             ]
         ]);
     }
@@ -62,7 +62,7 @@ class PageController extends Controller
             'title' => 'Частые вопросы',
             'breadcrumbs' => [
                 ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Частые вопросы', 'url' => route('pages.faq')]
+                ['name' => 'Частые вопросы', 'url' => route('faq')]
             ]
         ]);
     }
@@ -80,7 +80,7 @@ class PageController extends Controller
             'title' => 'Контакты',
             'breadcrumbs' => [
                 ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Контакты', 'url' => route('pages.contacts')]
+                ['name' => 'Контакты', 'url' => route('contacts')]
             ]
         ]);
     }
@@ -100,4 +100,10 @@ class PageController extends Controller
 
         return redirect()->back()->with('success', 'Ваше сообщение успешно отправлено! Мы свяжемся с вами в ближайшее время.');
     }
+	
+	public function deals()
+	{
+		return view('pages.deals');
+	}
+	
 }
