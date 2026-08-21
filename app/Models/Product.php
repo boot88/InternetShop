@@ -59,7 +59,9 @@ class Product extends Model
 
     public function images(): HasMany
     {
-        return $this->hasMany(ProductImage::class);
+        return $this->hasMany(ProductImage::class)
+            ->orderByDesc('is_main')
+            ->orderBy('order');
     }
 
     public function reviews(): HasMany
@@ -81,19 +83,18 @@ class Product extends Model
     public function getFinalPriceAttribute()
     {
         if ($this->has_variants && $this->variants->isNotEmpty()) {
-            return $this->variants->min('price');
+            return $this->variants->where('is_active', true)->min('price') ?? $this->price;
         }
         
-        return $this->compare_price && $this->compare_price > $this->price 
-            ? $this->compare_price 
-            : $this->price;
+        // price is the selling price; compare_price is only the crossed-out old price.
+        return $this->price;
     }
 
     public function getHasDiscountAttribute()
     {
         if ($this->has_variants) {
             return $this->variants->contains(function ($variant) {
-                return $variant->has_discount;
+                return $variant->is_active && $variant->has_discount;
             });
         }
         
@@ -114,7 +115,7 @@ class Product extends Model
     {
         if ($this->has_variants) {
             return $this->variants->contains(function ($variant) {
-                return $variant->stock && $variant->stock->in_stock;
+                return $variant->is_active && $variant->stock && $variant->stock->in_stock;
             });
         }
         
@@ -125,7 +126,7 @@ class Product extends Model
     {
         if ($this->has_variants) {
             return $this->variants->sum(function ($variant) {
-                return $variant->stock ? $variant->stock->quantity : 0;
+                return $variant->is_active && $variant->stock ? $variant->stock->quantity : 0;
             });
         }
         

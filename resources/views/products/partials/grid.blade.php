@@ -2,8 +2,8 @@
   <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4">
     @foreach($products as $product)
       @php
-        $img = $product->images->sortByDesc('is_main')->sortBy('order')->first();
-        $src = $img ? (method_exists($img, 'getUrl') ? $img->getUrl() : $img->image_path) : null;
+        $img = $product->main_image;
+        $src = $img?->getUrl();
       @endphp
 
       <div class="group overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-slate-100 hover:shadow-md transition">
@@ -33,16 +33,19 @@
         <div class="px-4 pb-4">
           <div class="flex items-center justify-between">
             <div class="text-lg font-semibold text-slate-900">
-              {{ number_format($product->price, 0, ',', ' ') }} ₽
+              {{ number_format($product->final_price, 0, ',', ' ') }} ₽
             </div>
 
-            <form method="POST" action="{{ route('cart.add', $product->id) }}" data-add-to-cart>
-              @csrf
-              <button type="submit" data-add-to-cart-button
-                      class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">
-                В корзину
-              </button>
-            </form>
+            @if($product->has_variants)
+              <a href="{{ route('products.show', $product->slug) }}" class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">Выбрать</a>
+            @elseif($product->in_stock)
+              <form method="POST" action="{{ route('cart.add', $product->id) }}" data-add-to-cart>
+                @csrf
+                <button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">В корзину</button>
+              </form>
+            @else
+              <span class="text-xs font-medium text-slate-400">Нет в наличии</span>
+            @endif
           </div>
         </div>
       </div>

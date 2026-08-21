@@ -38,14 +38,13 @@ class ProductVariant extends Model
         return $this->belongsTo(Product::class);
     }
 
-    /*public function attributeValues(): BelongsToMany
+    public function attributeValues(): BelongsToMany
     {
-    //    return $this->belongsToMany(AttributeValue::class, 'product_variant_attributes');
-    }*/
+        return $this->belongsToMany(AttributeValue::class, 'product_variant_attributes');
+    }
 
     public function stock(): HasOne
     {
-        // Указываем правильное имя колонки
         return $this->hasOne(Stock::class, 'variant_id');
     }
 
@@ -66,9 +65,7 @@ class ProductVariant extends Model
 
     public function getFinalPriceAttribute()
     {
-        return $this->compare_price && $this->compare_price > $this->price 
-            ? $this->compare_price 
-            : $this->price;
+        return $this->price;
     }
 
     public function getHasDiscountAttribute()
@@ -81,5 +78,10 @@ class ProductVariant extends Model
         if (!$this->has_discount) return 0;
         
         return round(($this->compare_price - $this->price) / $this->compare_price * 100);
+    }
+
+    public function getStockQuantityAttribute(): int
+    {
+        return (int) ($this->stock?->quantity ?? 0);
     }
 }

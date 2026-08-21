@@ -2,163 +2,78 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Models\Product;
 use App\Models\Category;
-use Illuminate\Support\Str;
+use App\Models\Product;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
     public function welcome(Request $request)
     {
-        $searchQuery = $request->input('q');
-        $searchResults = null;
+        $searchQuery = trim((string) $request->input('q'));
+        $withProductData = ['categories', 'brand', 'images', 'stock', 'variants.stock'];
 
-        try {
-            // Если есть поисковый запрос, выполняем поиск
-            if ($searchQuery) {
-                $searchResults = Product::with(['categories', 'brand', 'images'])
-                    ->where('is_active', true)
-                    ->where(function($query) use ($searchQuery) {
-                        $query->where('name', 'like', '%' . $searchQuery . '%')
-                              ->orWhere('description', 'like', '%' . $searchQuery . '%')
-                              ->orWhere('sku', 'like', '%' . $searchQuery . '%')
-                              ->orWhereHas('categories', function($q) use ($searchQuery) {
-                                  $q->where('name', 'like', '%' . $searchQuery . '%');
-                              })
-                              ->orWhereHas('brand', function($q) use ($searchQuery) {
-                                  $q->where('name', 'like', '%' . $searchQuery . '%');
-                              });
-                    })
-                    ->orderBy('created_at', 'desc')
-                    ->get();
-            }
-
-            // Получаем рекомендуемые товары
-            $featuredProducts = Product::with(['categories', 'brand', 'images'])
-                ->where('is_featured', true)
-                ->where('is_active', true)
-                ->orderBy('created_at', 'desc')
-                ->take(8)
+        $searchResults = $searchQuery === ''
+            ? collect()
+            : Product::with($withProductData)
+                ->active()
+                ->search($searchQuery)
+                ->latest()
+                ->limit(12)
                 ->get();
 
-            $featuredCategories = Category::withCount('products')
-                ->having('products_count', '>', 0)
-                ->orderBy('products_count', 'desc')
-                ->take(4)
-                ->get();
+        $featuredProducts = Product::with($withProductData)
+            ->active()
+            ->featured()
+            ->latest()
+            ->limit(8)
+            ->get();
 
-            $categories = Category::withCount('products')
-                ->having('products_count', '>', 0)
-                ->get();
-            
-            
-             // Популярные — по order_items (по сумме купленных qty)
-$popularProducts = Product::query()
-    ->with(['categories', 'brand', 'images'])
-    ->active()
-    ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
-    ->select('products.*', DB::raw('COALESCE(SUM(order_items.quantity),0) as sold_qty'))
-    ->groupBy('products.id')
-    ->orderByDesc('sold_qty')
-    ->orderByDesc('products.created_at')
-    ->take(8)
-    ->get();
+        $featuredCategories = Category::withCount(['products' => fn ($query) => $query->active()])
+            ->having('products_count', '>', 0)
+            ->orderByDesc('products_count')
+            ->limit(6)
+            ->get();
 
-// Новинки — по created_at desc
-$newProducts = Product::with(['categories', 'brand', 'images'])
-    ->active()
-    ->orderByDesc('created_at')
-    ->take(8)
-    ->get();
+        $categories = Category::withCount(['products' => fn ($query) => $query->active()])
+            ->having('products_count', '>', 0)
+            ->orderBy('name')
+            ->get();
 
-// Акции — compare_price > price
-$saleProducts = Product::with(['categories', 'brand', 'images'])
-    ->active()
-    ->whereColumn('compare_price', '>', 'price')
-    ->orderByRaw('(compare_price - price) DESC')
-    ->take(8)
-    ->get();           
+        $popularProducts = Product::query()
+            ->with($withProductData)
+            ->active()
+            ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
+            ->select('products.*', DB::raw('COALESCE(SUM(order_items.quantity), 0) as sold_qty'))
+            ->groupBy('products.id')
+            ->orderByDesc('sold_qty')
+            ->latest('products.created_at')
+            ->limit(8)
+            ->get();
 
+        $newProducts = Product::with($withProductData)
+            ->active()
+            ->latest()
+            ->limit(8)
+            ->get();
 
-        } catch (\Exception $e) {
-            // Если база данных еще не готова, используем заглушки
-            $featuredProducts = $this->getDummyProducts();
-            $featuredCategories = $this->getDummyCategories();
-            $categories = $this->getDummyCategories();
-
-            $popularProducts = $featuredProducts;
-            $newProducts = $featuredProducts;
-            $saleProducts = $featuredProducts;
-            
-            // Заглушка для поиска
-            if ($searchQuery) {
-                $searchResults = $this->getDummyProducts()->filter(function($product) use ($searchQuery) {
-                    return stripos($product->name, $searchQuery) !== false || 
-                           stripos($product->description, $searchQuery) !== false;
-                });
-            }
-        }
+        $saleProducts = Product::with($withProductData)
+            ->active()
+            ->whereColumn('compare_price', '>', 'price')
+            ->orderByRaw('(compare_price - price) DESC')
+            ->limit(8)
+            ->get();
 
         return view('welcome', compact(
-            'featuredProducts', 
-            'featuredCategories', 
+            'featuredProducts',
+            'featuredCategories',
             'categories',
             'searchResults',
             'searchQuery',
             'popularProducts',
             'newProducts',
-            'saleProducts'
+            'saleProducts',
         ));
-    }
-
-    // Остальные методы без изменений...
-    private function getDummyProducts()
-    {
-        return collect([
-            [
-                'id' => 1,
-                'name' => 'Смартфон Samsung Galaxy',
-                'description' => 'Современный смартфон с отличной камерой и большим экраном',
-                'price' => 29990,
-                'categories' => collect([['name' => 'Электроника']]),
-                'brand' => ['name' => 'Samsung'],
-            ],
-            [
-                'id' => 2,
-                'name' => 'Футболка хлопковая',
-                'description' => 'Удобная футболка из 100% хлопка, различные цвета',
-                'price' => 1990,
-                'categories' => collect([['name' => 'Одежда']]),
-                'brand' => ['name' => 'Nike'],
-            ],
-            [
-                'id' => 3,
-                'name' => 'Ноутбук ASUS',
-                'description' => 'Мощный ноутбук для работы и игр',
-                'price' => 59990,
-                'categories' => collect([['name' => 'Электроника']]),
-                'brand' => ['name' => 'ASUS'],
-            ],
-            [
-                'id' => 4,
-                'name' => 'Кроссовки беговые',
-                'description' => 'Легкие кроссовки для спорта и повседневной носки',
-                'price' => 4990,
-                'categories' => collect([['name' => 'Обувь']]),
-                'brand' => ['name' => 'Adidas'],
-            ],
-        ]);
-    }
-
-    private function getDummyCategories()
-    {
-        return collect([
-            ['id' => 1, 'name' => 'Электроника', 'products_count' => 15],
-            ['id' => 2, 'name' => 'Одежда', 'products_count' => 23],
-            ['id' => 3, 'name' => 'Книги', 'products_count' => 8],
-            ['id' => 4, 'name' => 'Спорт', 'products_count' => 12],
-        ]);
     }
 }

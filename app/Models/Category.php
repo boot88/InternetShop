@@ -55,9 +55,9 @@ class Category extends Model
         return $query->whereNull('parent_id');
     }
 
-    public function getProductsCountAttribute()
+    public function getProductsCountAttribute($value): int
     {
-        return $this->products()->count();
+        return $value !== null ? (int) $value : $this->products()->count();
     }
 
     public function getActiveChildrenAttribute()

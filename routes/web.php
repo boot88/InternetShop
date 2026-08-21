@@ -4,12 +4,15 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SitemapController;
 
 // Главная
 Route::get('/', [HomeController::class, 'welcome'])->name('home');
+Route::get('/sitemap.xml', SitemapController::class)->name('sitemap');
 //Route::get('/', [HomeController::class, 'index'])->name('home');
 
 
@@ -40,6 +43,11 @@ Route::post('/cart/update/{id}',    [CartController::class, 'update'])->name('ca
 Route::delete('/cart/remove/{id}',  [CartController::class, 'remove'])->name('cart.remove');
 Route::post('/cart/clear',          [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/cart/count',           [CartController::class, 'getCartCount'])->name('cart.count');
+
+// Оформление заказа доступно и гостям: контактные данные собираются в форме.
+Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
+Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+Route::get('/checkout/success/{order}', [CheckoutController::class, 'success'])->name('checkout.success');
 
 // Заглушки
 Route::get('/profile', fn() => redirect('/')->with('info', 'Страница профиля в разработке'))->name('profile.edit');

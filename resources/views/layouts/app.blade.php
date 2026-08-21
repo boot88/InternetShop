@@ -6,6 +6,8 @@
   <meta name="csrf-token" content="{{ csrf_token() }}">
   <meta name="app-base" content="{{ rtrim(url('/'), '/') }}">
   <title>@yield('title', config('app.name', 'TechZone'))</title>
+  <meta name="description" content="@yield('meta_description', 'TechZone — каталог электроники, актуальные цены и оформление заказа онлайн.')">
+  <link rel="canonical" href="{{ url()->current() }}">
   
   <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
   <link rel="icon" href="{{ asset('favicon.png') }}" type="image/png" sizes="32x32">

@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
-use App\Http\Requests\ProductFilterRequest;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +64,7 @@ class ProductController extends Controller
 
     // --- Базовый запрос товаров
     $productsQuery = Product::query()
-        ->with(['images', 'brand', 'categories'])
+        ->with(['images', 'brand', 'categories', 'stock', 'variants.stock'])
         ->active()
         ->when($search !== '', function ($q) use ($search) {
             $q->where(function ($w) use ($search) {
@@ -169,60 +168,36 @@ class ProductController extends Controller
 	
 
     public function show(string $identifier): View
-{
-    try {
-        // Определяем, передан ID или slug
+    {
         $query = Product::with([
             'brand', 
             'categories', 
             'images',
+            'stock',
             'variants' => function ($query) {
-                $query->where('is_active', true);
+                $query->where('is_active', true)->with(['stock', 'attributeValues']);
             },
             'reviews' => function ($query) {
                 $query->where('is_approved', true);
             }
-        ])->where('is_active', true);
+        ])->active();
 
-        // Если передан числовой ID
         if (is_numeric($identifier)) {
             $product = $query->where('id', $identifier)->firstOrFail();
         } else {
-            // Если передан slug
             $product = $query->where('slug', $identifier)->firstOrFail();
         }
 
-        $relatedProducts = Product::with(['brand', 'images'])
+        $relatedProducts = Product::with(['brand', 'images', 'stock', 'variants.stock'])
             ->where('id', '!=', $product->id)
-            ->where('is_active', true)
+            ->active()
             ->inRandomOrder()
             ->limit(4)
             ->get();
 
         return view('products.show', compact('product', 'relatedProducts'));
-
-    } catch (\Exception $e) {
-        abort(404);
     }
-}
 
-    /**
-     * Получить ID категории и всех её подкатегорий
-     */
-    private function getCategoryAndChildrenIds(Category $category): array
-    {
-        $ids = [$category->id];
-        
-        foreach ($category->children as $child) {
-            if ($child->is_active) {
-                $ids = array_merge($ids, $this->getCategoryAndChildrenIds($child));
-            }
-        }
-        
-        return $ids;
-    }
-	
-	
 	/**
      * Поиск товаров
      */

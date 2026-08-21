@@ -16,8 +16,8 @@
                         <div class="flex flex-col sm:flex-row sm:items-center gap-4 border-b border-gray-200 pb-6 last:border-b-0" data-cart-item-id="{{ $item->id }}" data-price="{{ $item->price }}">
                             <!-- Изображение товара -->
                             <div class="flex-shrink-0 w-20 h-20 sm:w-20 sm:h-20">
-                                @if($item->product->images->isNotEmpty())
-                                    <img src="{{ $item->product->images->first()->image_path }}" 
+                                @if($item->product->main_image)
+                                    <img src="{{ $item->product->main_image->getUrl() }}"
                                          alt="{{ $item->product->name }}" 
                                          class="w-full h-full object-cover rounded-lg">
                                 @else
@@ -38,6 +38,9 @@
                                 </h3>
                                 @if($item->product->brand)
                                     <p class="text-gray-600 text-sm">{{ $item->product->brand->name }}</p>
+                                @endif
+                                @if($item->variant_attributes)
+                                    <p class="text-gray-500 text-sm">{{ $item->variant_attributes }}</p>
                                 @endif
                             </div>
 
@@ -71,7 +74,7 @@
 
                             <!-- Цена -->
                             <div class="text-left sm:text-right w-full sm:w-auto">
-                                <p class="text-lg font-semibold text-gray-900">
+                                <p class="text-lg font-semibold text-gray-900" data-item-total-id="{{ $item->id }}">
                                     {{ number_format($item->price * $item->quantity, 0, ',', ' ') }} ₽
                                 </p>
                                 <p class="text-gray-600 text-sm">
@@ -80,7 +83,7 @@
                             </div>
 
                             <!-- Удаление -->
-                            <form class="flex-shrink-0 self-end sm:self-auto" action="{{ route('cart.remove', $item->id) }}" method="POST" class="flex-shrink-0" data-cart-remove>
+                            <form class="flex-shrink-0 self-end sm:self-auto" action="{{ route('cart.remove', $item->id) }}" method="POST" data-cart-remove>
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" 
@@ -119,9 +122,9 @@
                                 </button>
                             </form>
                             
-                            <button class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium transition-colors duration-200">
+                            <a href="{{ route('checkout.create') }}" class="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 font-medium text-center transition-colors duration-200">
                                 Оформить заказ
-                            </button>
+                            </a>
                         </div>
                     </div>
                 </div>

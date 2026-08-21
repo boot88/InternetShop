@@ -33,8 +33,8 @@ class Brand extends Model
         return $query->where('is_active', true);
     }
 
-    public function getProductsCountAttribute()
+    public function getProductsCountAttribute($value): int
     {
-        return $this->products()->count();
+        return $value !== null ? (int) $value : $this->products()->count();
     }
 }

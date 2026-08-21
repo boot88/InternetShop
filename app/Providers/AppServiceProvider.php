@@ -15,7 +15,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        View::composer('*', function ($view) {
+        View::composer('layouts.app', function ($view) {
             $view->with('cartCount', CartController::getCartCountStatic());
         });
     }

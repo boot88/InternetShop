@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class PageController extends Controller
 {
@@ -95,10 +97,21 @@ class PageController extends Controller
             'message' => 'required|string|min:10'
         ]);
 
-        // Здесь можно добавить логику отправки email
-        // Mail::to('info@store.com')->send(new ContactForm($validated));
+        $recipient = config('mail.to.address') ?: config('mail.from.address');
 
-        return redirect()->back()->with('success', 'Ваше сообщение успешно отправлено! Мы свяжемся с вами в ближайшее время.');
+        try {
+            Mail::raw(
+                "Имя: {$validated['name']}\nТелефон: {$validated['phone']}\nEmail: {$validated['email']}\nТема: {$validated['subject']}\n\n{$validated['message']}",
+                fn ($message) => $message->to($recipient)->subject('Сообщение с сайта TechZone: '.$validated['subject'])
+            );
+        } catch (\Throwable $exception) {
+            report($exception);
+            Log::warning('Не удалось отправить сообщение с формы контактов.', ['email' => $validated['email']]);
+
+            return back()->withInput()->withErrors(['contact' => 'Не удалось отправить сообщение. Попробуйте позже или свяжитесь с нами по телефону.']);
+        }
+
+        return redirect()->back()->with('success', 'Сообщение отправлено. Мы свяжемся с вами в ближайшее время.');
     }
 	
 	public function deals()
