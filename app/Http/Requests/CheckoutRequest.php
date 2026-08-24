@@ -18,7 +18,7 @@ class CheckoutRequest extends FormRequest
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['required', 'string', 'min:7', 'max:30', 'regex:/^[+0-9()\-\s]+$/'],
             'shipping_address' => ['required', 'string', 'min:8', 'max:1000'],
-            'shipping_method' => ['required', 'in:e2e4_pickup,cdek_pickup,russian_post_pickup,russian_post_courier'],
+            'shipping_method' => ['required', 'in:store_pickup,cdek_pickup,russian_post_pickup,russian_post_courier'],
             'payment_method' => ['required', 'in:online_prepayment,bank_transfer'],
             'customer_note' => ['nullable', 'string', 'max:2000'],
             'privacy_consent' => ['accepted'],

@@ -13,7 +13,7 @@ return [
     'legal_address' => env('STORE_LEGAL_ADDRESS'),
     'return_address' => env('STORE_RETURN_ADDRESS', 'Новосибирская область, г. Новосибирск, ул. Ленина, д. 33, офис 102'),
     'bank_details' => env('STORE_BANK_DETAILS'),
-    'delivery_note' => env('STORE_DELIVERY_NOTE', 'Самовывоз из пункта e2e4 — бесплатно. Для СДЭК и Почты России тариф и срок подтверждаются менеджером до предоплаты.'),
+    'delivery_note' => env('STORE_DELIVERY_NOTE', 'Самовывоз, СДЭК или Почта России: срок и стоимость подтверждаются менеджером до предоплаты.'),
     'warranty_note' => env('STORE_WARRANTY_NOTE', 'Гарантийный срок и порядок сервиса указаны в документах конкретного товара. При обращении подготовьте номер заказа.'),
     'analytics_id' => env('YANDEX_METRIKA_ID'),
     'admin_emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('STORE_ADMIN_EMAILS', 'administrator@marketing.ru'))))),

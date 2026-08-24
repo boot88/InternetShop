@@ -104,7 +104,7 @@ class Order extends Model
     public function getShippingMethodLabelAttribute(): string
     {
         return match ($this->shipping_method) {
-            'e2e4_pickup' => 'Самовывоз из пункта e2e4',
+            'store_pickup' => 'Самовывоз из магазина',
             'cdek_pickup' => 'Самовывоз из пункта СДЭК',
             'russian_post_pickup' => 'Самовывоз из отделения Почты России',
             'russian_post_courier' => 'Курьерская доставка Почтой России',
