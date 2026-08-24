@@ -3,14 +3,9 @@
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
-    <h1 class="text-2xl font-semibold tracking-tight">Каталог</h1>
+    <div><p class="text-sm font-semibold text-indigo-600">TechZone</p><h1 class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">Каталог</h1></div>
 
-    {{-- Mobile filters button --}}
-    <button id="openFiltersBtn"
-      class="lg:hidden inline-flex items-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold hover:bg-slate-50">
-      <span>Фильтры</span>
-      <span class="text-slate-500">({{ $products->total() }})</span>
-    </button>
+    <button id="openFiltersBtn" class="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-slate-50 lg:hidden"><span>Фильтры</span><span data-mobile-products-total class="rounded-full bg-slate-100 px-1.5 py-0.5 text-xs text-slate-500">{{ $products->total() }}</span></button>
     <form method="GET" action="{{ route('products.index') }}" class="flex items-center gap-2 text-sm">
       @foreach(request()->except('sort', 'page') as $key => $value)
         @if(is_array($value))
@@ -29,17 +24,26 @@
     </form>
   </div>
 
-  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
+  <div class="mt-5 flex flex-wrap gap-2">
+    <a href="{{ route('products.index') }}" class="rounded-full px-4 py-2 text-sm font-medium {{ !$selectedCategory ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50' }}">Все товары</a>
+    @foreach($categories->take(6) as $category)
+      <a href="{{ route('products.index', array_merge(request()->except(['category', 'page']), ['category' => $category->id])) }}" class="rounded-full px-4 py-2 text-sm font-medium {{ $selectedCategory == $category->id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50' }}">{{ $category->name }}</a>
+    @endforeach
+  </div>
+
+  @include('products.partials.catalog-meta')
+
+  <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
 
     {{-- Desktop sidebar --}}
-    <aside class="hidden lg:block lg:col-span-1">
-      <div id="filtersSidebar" class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-100">
+    <aside class="hidden lg:block">
+      <div id="filtersSidebar" class="sticky top-20 rounded-2xl bg-white p-5 shadow-sm ring-1 ring-slate-200">
         @include('products.partials.filters')
       </div>
     </aside>
 
     {{-- Grid --}}
-    <section class="lg:col-span-3">
+    <section>
       <div class="relative">
         <div id="gridLoading"
              class="pointer-events-none absolute inset-0 hidden items-center justify-center rounded-3xl bg-white/60 backdrop-blur-sm">
@@ -109,7 +113,6 @@
   if(backdrop) backdrop.addEventListener('click', closeDrawer);
 
   let abort = null;
-  const timers = new WeakMap();
 
   function setLoading(on){
     if(!loading) return;
@@ -155,11 +158,14 @@
 
       let filtersHtml = null;
       let gridHtml = null;
+      let catalogMetaHtml = null;
 
       if(ct.includes('application/json')){
         const data = await res.json();
         filtersHtml = (typeof data.filtersHtml !== 'undefined') ? data.filtersHtml : null;
         gridHtml    = (typeof data.gridHtml    !== 'undefined') ? data.gridHtml    : null;
+        catalogMetaHtml = (typeof data.catalogMetaHtml !== 'undefined') ? data.catalogMetaHtml : null;
+        document.querySelectorAll('[data-mobile-products-total]').forEach((element) => element.textContent = String(data.total ?? ''));
       } else {
         // fallback на HTML (на всякий случай)
         const html = await res.text();
@@ -177,6 +183,9 @@
       // apply DOM updates
       const gridWrap = document.getElementById('productsGridWrap');
       if(gridWrap && gridHtml !== null) gridWrap.innerHTML = gridHtml;
+
+      const catalogMeta = document.getElementById('catalogMeta');
+      if(catalogMeta && catalogMetaHtml !== null) catalogMeta.outerHTML = catalogMetaHtml;
 
       const sidebar = document.getElementById('filtersSidebar');
       const drawerInner = document.getElementById('filtersDrawerInner');
@@ -199,18 +208,6 @@
     }finally{
       setLoading(false);
     }
-  }
-
-  function scheduleSubmit(form, opts){
-    const prev = timers.get(form);
-    if(prev) clearTimeout(prev);
-
-    const t = setTimeout(() => {
-      const url = buildUrlFromForm(form);
-      fetchAndUpdate(url, opts);
-    }, 250);
-
-    timers.set(form, t);
   }
 
   function attachHandlers(root){
@@ -238,20 +235,29 @@
     }
 
     if(rMin && rMax && iMin && iMax){
-      rMin.addEventListener('input', () => { clampRanges(); scheduleSubmit(form, { closeMobile:false }); });
-      rMax.addEventListener('input', () => { clampRanges(); scheduleSubmit(form, { closeMobile:false }); });
-      iMin.addEventListener('change', () => { rMin.value = iMin.value || rMin.min; clampRanges(); scheduleSubmit(form, { closeMobile:false }); });
-      iMax.addEventListener('change', () => { rMax.value = iMax.value || rMax.max; clampRanges(); scheduleSubmit(form, { closeMobile:false }); });
+      rMin.addEventListener('input', clampRanges);
+      rMax.addEventListener('input', clampRanges);
+      iMin.addEventListener('change', () => { rMin.value = iMin.value || rMin.min; clampRanges(); });
+      iMax.addEventListener('change', () => { rMax.value = iMax.value || rMax.max; clampRanges(); });
       clampRanges();
     }
 
-    // 🔥 ВАЖНО: не слушаем change на всей форме — только на помеченных инпутах
-    form.querySelectorAll('[data-filter-input]').forEach((input) => {
-      input.addEventListener('change', (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        scheduleSubmit(form, { closeMobile:false });
+    const brandSearch = form.querySelector('[data-brand-search]');
+    const brandRows = [...form.querySelectorAll('[data-brand-row]')];
+    const toggleBrands = form.querySelector('[data-toggle-brands]');
+    let allBrandsVisible = false;
+    brandSearch?.addEventListener('input', () => {
+      const query = brandSearch.value.trim().toLowerCase();
+      brandRows.forEach((row, index) => {
+        const matches = row.textContent.toLowerCase().includes(query);
+        row.classList.toggle('hidden', !matches || (!query && !allBrandsVisible && index >= 6 && !row.querySelector('input').checked));
       });
+      if(toggleBrands) toggleBrands.classList.toggle('hidden', query.length > 0);
+    });
+    toggleBrands?.addEventListener('click', () => {
+      allBrandsVisible = !allBrandsVisible;
+      brandRows.forEach((row, index) => { if(index >= 6) row.classList.toggle('hidden', !allBrandsVisible && !row.querySelector('input').checked); });
+      toggleBrands.textContent = allBrandsVisible ? 'Свернуть бренды' : 'Показать все бренды';
     });
 
     // submit (кнопка "Применить" на мобилке)

@@ -160,6 +160,11 @@ class ProductController extends Controller
                 'rangeMin', 'rangeMax', 'priceMin', 'priceMax', 'selectedCategory', 'selectedBrands', 'search', 'inStockOnly', 'sort'
             ))->render(),
             'gridHtml' => view('products.partials.grid', compact('products'))->render(),
+            'catalogMetaHtml' => view('products.partials.catalog-meta', compact(
+                'products', 'categories', 'brands', 'rangeMin', 'rangeMax', 'priceMin', 'priceMax',
+                'selectedCategory', 'selectedBrands', 'search', 'inStockOnly', 'sort'
+            ))->render(),
+            'total' => $products->total(),
         ]);
     }
 
