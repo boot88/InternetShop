@@ -91,7 +91,7 @@ class CheckoutController extends Controller
                 'customer_note' => $data['customer_note'] ?? null,
                 'shipping_address' => $data['shipping_address'],
                 'billing_address' => $contact,
-                'shipping_method' => 'agreed_before_payment',
+                'shipping_method' => $data['shipping_method'],
                 'payment_method' => $data['payment_method'],
                 'payment_status' => 'pending',
             ]);
@@ -138,15 +138,18 @@ class CheckoutController extends Controller
 
     private function sendOrderNotifications(Order $order, ?string $customerEmail): void
     {
-        $storeEmail = config('store.email');
-        $text = "Заказ {$order->order_number}\nСумма товаров: ".number_format((float) $order->total, 0, ',', ' ')." ₽\nСтоимость доставки согласуется отдельно.";
+        $recipients = array_values(array_unique(array_filter([
+            config('store.email'),
+            ...config('store.admin_emails', []),
+        ])));
+        $text = "Заказ {$order->order_number}\nСумма товаров: ".number_format((float) $order->total, 0, ',', ' ')." ₽\nСпособ доставки: {$order->shipping_method_label}\nСтоимость доставки: ".($order->shipping_cost > 0 ? number_format((float) $order->shipping_cost, 0, ',', ' ').' ₽' : 'подтверждается менеджером, если применимо').'.';
 
         try {
             if ($customerEmail) {
                 Mail::raw($text."\n\nЗаказ принят. Менеджер свяжется с вами для подтверждения.", fn ($message) => $message->to($customerEmail)->subject('Заказ '.$order->order_number));
             }
-            if ($storeEmail) {
-                Mail::raw($text."\n\nОткройте заказ в административной панели.", fn ($message) => $message->to($storeEmail)->subject('Новый заказ '.$order->order_number));
+            if ($recipients) {
+                Mail::raw($text."\n\nОткройте заказ в административной панели.", fn ($message) => $message->to($recipients)->subject('Новый заказ '.$order->order_number));
             }
         } catch (\Throwable $exception) {
             report($exception);

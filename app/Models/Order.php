@@ -94,9 +94,22 @@ class Order extends Model
     public function getPaymentMethodLabelAttribute(): string
     {
         return match ($this->payment_method) {
+            'online_prepayment' => 'Онлайн-предоплата',
             'card_on_delivery' => 'Оплата при получении',
             'bank_transfer' => 'Оплата по счёту',
             default => $this->payment_method,
+        };
+    }
+
+    public function getShippingMethodLabelAttribute(): string
+    {
+        return match ($this->shipping_method) {
+            'e2e4_pickup' => 'Самовывоз из пункта e2e4',
+            'cdek_pickup' => 'Самовывоз из пункта СДЭК',
+            'russian_post_pickup' => 'Самовывоз из отделения Почты России',
+            'russian_post_courier' => 'Курьерская доставка Почтой России',
+            'agreed_before_payment' => 'Согласуется с менеджером',
+            default => $this->shipping_method,
         };
     }
 }

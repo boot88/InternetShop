@@ -58,7 +58,8 @@ class StorefrontFlowTest extends TestCase
             'name' => 'Покупатель',
             'phone' => '+7 999 000-00-00',
             'shipping_address' => 'Новосибирск, тестовый адрес 1',
-            'payment_method' => 'card_on_delivery',
+            'shipping_method' => 'e2e4_pickup',
+            'payment_method' => 'online_prepayment',
         ])->assertSessionHasErrors(['privacy_consent', 'terms_consent']);
     }
 
@@ -81,7 +82,8 @@ class StorefrontFlowTest extends TestCase
             'name' => 'Покупатель',
             'phone' => '+7 999 000-00-00',
             'shipping_address' => 'Новосибирск, тестовый адрес 1',
-            'payment_method' => 'card_on_delivery',
+            'shipping_method' => 'e2e4_pickup',
+            'payment_method' => 'online_prepayment',
             'privacy_consent' => '1',
             'terms_consent' => '1',
         ]);
