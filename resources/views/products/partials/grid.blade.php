@@ -41,6 +41,7 @@
             @elseif($product->in_stock)
               <form method="POST" action="{{ route('cart.add', $product->id) }}" data-add-to-cart>
                 @csrf
+                <input type="hidden" name="quantity" value="1">
                 <button type="submit" data-add-to-cart-button class="rounded-xl bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-800">В корзину</button>
               </form>
             @else

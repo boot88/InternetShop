@@ -87,6 +87,7 @@
 
           <form action="{{ route('cart.add', $product->id) }}" method="POST" class="mt-6" data-add-to-cart>
             @csrf
+            <input type="hidden" name="quantity" value="1">
             @if($product->uses_variants)
               <label class="block text-sm font-medium text-slate-800">
                 Вариант

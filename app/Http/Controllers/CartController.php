@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class CartController extends Controller
 {
@@ -182,6 +183,59 @@ class CartController extends Controller
         }
 
         return Cart::firstOrCreate(['session_id' => session()->getId()]);
+    }
+
+    /**
+     * Preserve a guest basket when the session is regenerated at login.
+     */
+    public static function mergeGuestCartForUser(int $userId, ?string $guestSessionId, string $currentSessionId): void
+    {
+        if (! $guestSessionId) {
+            return;
+        }
+
+        DB::transaction(function () use ($userId, $guestSessionId, $currentSessionId): void {
+            $guestCart = Cart::query()
+                ->whereNull('user_id')
+                ->where('session_id', $guestSessionId)
+                ->with('items')
+                ->first();
+
+            $userCart = Cart::firstOrCreate(
+                ['user_id' => $userId],
+                ['session_id' => $currentSessionId]
+            );
+            $userCart->update(['session_id' => $currentSessionId]);
+
+            if (! $guestCart || $guestCart->is($userCart)) {
+                return;
+            }
+
+            foreach ($guestCart->items as $guestItem) {
+                $existingQuery = $userCart->items()->where('product_id', $guestItem->product_id);
+                $guestItem->variant_id
+                    ? $existingQuery->where('variant_id', $guestItem->variant_id)
+                    : $existingQuery->whereNull('variant_id');
+                $existingItem = $existingQuery->first();
+
+                if ($existingItem) {
+                    $existingItem->update([
+                        'quantity' => min(self::MAX_ITEM_QUANTITY, $existingItem->quantity + $guestItem->quantity),
+                    ]);
+                    continue;
+                }
+
+                $userCart->items()->create([
+                    'product_id' => $guestItem->product_id,
+                    'variant_id' => $guestItem->variant_id,
+                    'quantity' => min(self::MAX_ITEM_QUANTITY, $guestItem->quantity),
+                    'price' => $guestItem->price,
+                ]);
+            }
+
+            $guestCart->items()->delete();
+            $guestCart->delete();
+        });
     }
 
     private function resolveVariant(Product $product, ?int $variantId): ?ProductVariant

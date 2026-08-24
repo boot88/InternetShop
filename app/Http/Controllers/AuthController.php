@@ -33,7 +33,9 @@ class AuthController extends Controller
 
         if (Auth::attempt($credentials)) {
             RateLimiter::clear($throttleKey);
+            $guestSessionId = $request->session()->getId();
             $request->session()->regenerate();
+            CartController::mergeGuestCartForUser(Auth::id(), $guestSessionId, $request->session()->getId());
             return redirect()->intended('/');
         }
 
@@ -65,8 +67,10 @@ class AuthController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        $guestSessionId = $request->session()->getId();
         Auth::login($user);
         $request->session()->regenerate();
+        CartController::mergeGuestCartForUser($user->id, $guestSessionId, $request->session()->getId());
 
         return redirect('/');
     }
