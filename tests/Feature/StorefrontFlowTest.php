@@ -14,6 +14,7 @@ class StorefrontFlowTest extends TestCase
 
     public function test_guest_can_add_an_available_product_to_cart(): void
     {
+        $this->withSession(['cart_test' => 'guest']);
         $product = Product::create([
             'name' => 'Тестовый товар',
             'slug' => 'test-product',
@@ -32,6 +33,7 @@ class StorefrontFlowTest extends TestCase
 
     public function test_checkout_requires_privacy_and_terms_consent(): void
     {
+        $this->withSession(['cart_test' => 'consent']);
         $product = Product::create([
             'name' => 'Тестовый товар',
             'slug' => 'checkout-product',
@@ -52,6 +54,7 @@ class StorefrontFlowTest extends TestCase
 
     public function test_checkout_creates_order_and_decrements_stock(): void
     {
+        $this->withSession(['cart_test' => 'checkout']);
         $product = Product::create([
             'name' => 'Товар для заказа',
             'slug' => 'ordered-product',
