@@ -53,6 +53,12 @@ class ProductImage extends Model
             return asset($p);
         }
 
+        // Seeded and imported product images may contain only the filename,
+        // while the actual static files live in public/images.
+        if (! str_contains($p, '/') && is_file(public_path('images/' . $p))) {
+            return asset('images/' . $p);
+        }
+
         return asset('storage/' . $p);
     }
 }
