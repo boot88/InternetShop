@@ -91,7 +91,7 @@ class ProductController extends Controller
         $categories = Category::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
         $quickCategories = Category::withCount(['products' => fn ($query) => $query->active()])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($query) => $query->active())
             ->orderByDesc('products_count')
             ->limit(6)
             ->get();

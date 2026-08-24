@@ -29,13 +29,13 @@ class HomeController extends Controller
         }
 
         $featuredCategories = Category::withCount(['products' => fn ($query) => $query->active()])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($query) => $query->active())
             ->orderByDesc('products_count')
             ->limit(6)
             ->get();
 
         $categories = Category::withCount(['products' => fn ($query) => $query->active()])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($query) => $query->active())
             ->orderBy('name')
             ->get();
 

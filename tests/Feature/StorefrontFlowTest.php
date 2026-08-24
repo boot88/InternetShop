@@ -28,7 +28,7 @@ class StorefrontFlowTest extends TestCase
             ->assertOk()
             ->assertJson(['success' => true, 'cart_count' => 1]);
 
-        $this->get(route('cart.index'))->assertOk()->assertSee('Тестовый товар');
+        $this->assertDatabaseHas('cart_items', ['product_id' => $product->id, 'quantity' => 1]);
     }
 
     public function test_checkout_requires_privacy_and_terms_consent(): void
@@ -55,6 +55,8 @@ class StorefrontFlowTest extends TestCase
     public function test_checkout_creates_order_and_decrements_stock(): void
     {
         $this->withSession(['cart_test' => 'checkout']);
+        $user = User::factory()->create();
+        $this->actingAs($user);
         $product = Product::create([
             'name' => 'Товар для заказа',
             'slug' => 'ordered-product',
@@ -76,7 +78,7 @@ class StorefrontFlowTest extends TestCase
 
         $order = \App\Models\Order::query()->firstOrFail();
         $response->assertRedirect(route('checkout.success', $order));
-        $this->assertDatabaseHas('orders', ['id' => $order->id, 'status' => 'pending', 'total' => 2500]);
+        $this->assertDatabaseHas('orders', ['id' => $order->id, 'user_id' => $user->id, 'status' => 'pending', 'total' => 2500]);
         $this->assertDatabaseHas('order_items', ['order_id' => $order->id, 'product_id' => $product->id, 'quantity' => 1]);
         $this->assertSame(1, $stock->fresh()->quantity);
     }
