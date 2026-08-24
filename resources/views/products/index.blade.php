@@ -1,5 +1,8 @@
 @extends('layouts.app')
 
+@section('title', 'Каталог — '.config('store.name', 'TechZone'))
+@section('meta_description', 'Каталог электроники с фильтрами по категории, бренду, цене и наличию.')
+
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
   <div class="flex flex-wrap items-center justify-between gap-4">
@@ -17,21 +20,17 @@
       <label for="catalog-sort" class="hidden sm:block text-slate-600">Сортировка</label>
       <select id="catalog-sort" name="sort" onchange="this.form.submit()" class="rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 font-medium focus:border-indigo-500 focus:ring-indigo-500">
         <option value="recommended" @selected($sort === 'recommended')>Рекомендуемые</option>
-        <option value="newest" @selected($sort === 'newest')>Сначала новые</option>
+        <option value="newest" @selected($sort === 'newest')>Недавно добавленные</option>
         <option value="price_asc" @selected($sort === 'price_asc')>Сначала дешевле</option>
         <option value="price_desc" @selected($sort === 'price_desc')>Сначала дороже</option>
       </select>
     </form>
   </div>
 
-  <div class="mt-5 flex flex-wrap gap-2">
-    <a href="{{ route('products.index') }}" class="rounded-full px-4 py-2 text-sm font-medium {{ !$selectedCategory ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50' }}">Все товары</a>
-    @foreach($categories->take(6) as $category)
-      <a href="{{ route('products.index', array_merge(request()->except(['category', 'page']), ['category' => $category->id])) }}" class="rounded-full px-4 py-2 text-sm font-medium {{ $selectedCategory == $category->id ? 'bg-slate-900 text-white' : 'bg-white text-slate-700 ring-1 ring-slate-200 hover:bg-slate-50' }}">{{ $category->name }}</a>
-    @endforeach
-  </div>
+  <div id="quickCategoriesWrap">@include('products.partials.quick-categories')</div>
 
   @include('products.partials.catalog-meta')
+  <div id="catalogError" class="mt-4 hidden rounded-xl bg-rose-50 p-3 text-sm text-rose-800" role="alert">Не удалось обновить каталог. Проверьте соединение и повторите попытку.</div>
 
   <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[280px_minmax(0,1fr)]">
 
@@ -82,12 +81,12 @@
 </div>
 
 {{-- Mobile off-canvas --}}
-<div id="filtersDrawer" class="fixed inset-0 z-50 hidden">
+<div id="filtersDrawer" class="fixed inset-0 z-50 hidden" role="dialog" aria-modal="true" aria-labelledby="filtersDrawerTitle">
   <div id="filtersBackdrop" class="absolute inset-0 bg-black/40"></div>
 
   <div class="absolute right-0 top-0 h-full w-[92%] max-w-md bg-white shadow-2xl">
     <div class="flex items-center justify-between border-b px-5 py-4">
-      <div class="text-lg font-semibold">Фильтры</div>
+      <div id="filtersDrawerTitle" class="text-lg font-semibold">Фильтры</div>
       <button id="closeFiltersBtn" class="rounded-xl px-3 py-2 text-sm font-semibold hover:bg-slate-100">Закрыть</button>
     </div>
 
@@ -105,12 +104,21 @@
   const backdrop = document.getElementById('filtersBackdrop');
   const loading = document.getElementById('gridLoading');
 
-  function openDrawer(){ if(drawer) drawer.classList.remove('hidden'); }
-  function closeDrawer(){ if(drawer) drawer.classList.add('hidden'); }
+  function openDrawer(){ if(drawer){ drawer.classList.remove('hidden'); document.body.classList.add('overflow-hidden'); closeBtn?.focus(); } }
+  function closeDrawer(){ if(drawer){ drawer.classList.add('hidden'); document.body.classList.remove('overflow-hidden'); openBtn?.focus(); } }
 
   if(openBtn) openBtn.addEventListener('click', openDrawer);
   if(closeBtn) closeBtn.addEventListener('click', closeDrawer);
   if(backdrop) backdrop.addEventListener('click', closeDrawer);
+  document.addEventListener('keydown', (event) => { if(event.key === 'Escape' && !drawer?.classList.contains('hidden')) closeDrawer(); });
+  drawer?.addEventListener('keydown', (event) => {
+    if(event.key !== 'Tab') return;
+    const focusable = [...drawer.querySelectorAll('button, a, input, select, summary, [tabindex]:not([tabindex="-1"])')].filter((element) => !element.disabled && element.offsetParent !== null);
+    if(!focusable.length) return;
+    const first = focusable[0], last = focusable[focusable.length - 1];
+    if(event.shiftKey && document.activeElement === first){ event.preventDefault(); last.focus(); }
+    else if(!event.shiftKey && document.activeElement === last){ event.preventDefault(); first.focus(); }
+  });
 
   let abort = null;
 
@@ -159,12 +167,14 @@
       let filtersHtml = null;
       let gridHtml = null;
       let catalogMetaHtml = null;
+      let quickCategoriesHtml = null;
 
       if(ct.includes('application/json')){
         const data = await res.json();
         filtersHtml = (typeof data.filtersHtml !== 'undefined') ? data.filtersHtml : null;
         gridHtml    = (typeof data.gridHtml    !== 'undefined') ? data.gridHtml    : null;
         catalogMetaHtml = (typeof data.catalogMetaHtml !== 'undefined') ? data.catalogMetaHtml : null;
+        quickCategoriesHtml = (typeof data.quickCategoriesHtml !== 'undefined') ? data.quickCategoriesHtml : null;
         document.querySelectorAll('[data-mobile-products-total]').forEach((element) => element.textContent = String(data.total ?? ''));
       } else {
         // fallback на HTML (на всякий случай)
@@ -186,6 +196,8 @@
 
       const catalogMeta = document.getElementById('catalogMeta');
       if(catalogMeta && catalogMetaHtml !== null) catalogMeta.outerHTML = catalogMetaHtml;
+      const quickCategories = document.getElementById('quickCategoriesWrap');
+      if(quickCategories && quickCategoriesHtml !== null) quickCategories.innerHTML = quickCategoriesHtml;
 
       const sidebar = document.getElementById('filtersSidebar');
       const drawerInner = document.getElementById('filtersDrawerInner');
@@ -200,11 +212,14 @@
         window.history.pushState({}, '', url.toString());
       }
 
+      document.getElementById('catalogError')?.classList.add('hidden');
+
       if(closeMobile) closeDrawer();
 
     }catch(e){
       if(e && e.name === 'AbortError') return;
       console.error('AJAX error:', e);
+      document.getElementById('catalogError')?.classList.remove('hidden');
     }finally{
       setLoading(false);
     }
@@ -308,10 +323,18 @@
       document.getElementById('quickViewLink').href = trigger.dataset.url || '#';
       quickView?.classList.remove('hidden');
       quickView?.setAttribute('aria-hidden', 'false');
+      document.body.classList.add('overflow-hidden');
+      quickView?.querySelector('button[data-quick-view-close]')?.focus();
     }
     if (event.target.closest('[data-quick-view-close]')) {
       quickView?.classList.add('hidden');
       quickView?.setAttribute('aria-hidden', 'true');
+      document.body.classList.remove('overflow-hidden');
+    }
+  });
+  document.addEventListener('keydown', (event) => {
+    if(event.key === 'Escape' && quickView && !quickView.classList.contains('hidden')){
+      quickView.classList.add('hidden'); quickView.setAttribute('aria-hidden','true'); document.body.classList.remove('overflow-hidden');
     }
   });
 })();

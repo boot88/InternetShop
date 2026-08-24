@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -16,19 +15,18 @@ class HomeController extends Controller
 
         $searchResults = $searchQuery === ''
             ? collect()
-            : Product::with($withProductData)
-                ->active()
-                ->search($searchQuery)
-                ->latest()
-                ->limit(12)
-                ->get();
+            : Product::with($withProductData)->active()->search($searchQuery)->latest()->limit(12)->get();
 
         $featuredProducts = Product::with($withProductData)
             ->active()
             ->featured()
-            ->latest()
+            ->orderByDesc('updated_at')
             ->limit(8)
             ->get();
+
+        if ($featuredProducts->isEmpty()) {
+            $featuredProducts = Product::with($withProductData)->active()->orderByDesc('updated_at')->limit(8)->get();
+        }
 
         $featuredCategories = Category::withCount(['products' => fn ($query) => $query->active()])
             ->having('products_count', '>', 0)
@@ -41,39 +39,32 @@ class HomeController extends Controller
             ->orderBy('name')
             ->get();
 
-        $popularProducts = Product::query()
-            ->with($withProductData)
+        $recentProducts = Product::with($withProductData)
             ->active()
-            ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
-            ->select('products.*', DB::raw('COALESCE(SUM(order_items.quantity), 0) as sold_qty'))
-            ->groupBy('products.id')
-            ->orderByDesc('sold_qty')
-            ->latest('products.created_at')
-            ->limit(8)
-            ->get();
-
-        $newProducts = Product::with($withProductData)
-            ->active()
-            ->latest()
+            ->orderByDesc('updated_at')
             ->limit(8)
             ->get();
 
         $saleProducts = Product::with($withProductData)
             ->active()
-            ->whereColumn('compare_price', '>', 'price')
+            ->where(function ($query): void {
+                $query->whereColumn('compare_price', '>', 'price')
+                    ->orWhereHas('variants', fn ($variant) => $variant->where('is_active', true)->whereColumn('product_variants.compare_price', '>', 'product_variants.price'));
+            })
             ->orderByRaw('(compare_price - price) DESC')
             ->limit(8)
             ->get();
 
-        return view('welcome', compact(
-            'featuredProducts',
-            'featuredCategories',
-            'categories',
-            'searchResults',
-            'searchQuery',
-            'popularProducts',
-            'newProducts',
-            'saleProducts',
-        ));
+        return view('welcome', [
+            'featuredProducts' => $featuredProducts,
+            'heroProduct' => $featuredProducts->first(),
+            'featuredCategories' => $featuredCategories,
+            'categories' => $categories,
+            'productsCount' => Product::active()->count(),
+            'searchResults' => $searchResults,
+            'searchQuery' => $searchQuery,
+            'recentProducts' => $recentProducts,
+            'saleProducts' => $saleProducts,
+        ]);
     }
 }

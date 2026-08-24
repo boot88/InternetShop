@@ -36,7 +36,7 @@
     </div>
   </details>
 
-  <details class="group border-b border-slate-100 py-3">
+  <details @if(!empty($selBrands)) open @endif class="group border-b border-slate-100 py-3">
     <summary class="flex cursor-pointer list-none items-center justify-between text-sm font-semibold text-slate-900"><span>Бренды</span><span class="text-slate-400 group-open:rotate-180">⌄</span></summary>
     <div class="mt-3"><input type="search" data-brand-search class="w-full rounded-xl border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-indigo-500" placeholder="Найти бренд"></div>
     <div class="mt-2 space-y-1" data-brands-list>

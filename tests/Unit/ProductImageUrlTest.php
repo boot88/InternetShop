@@ -21,10 +21,10 @@ class ProductImageUrlTest extends TestCase
         $this->assertSame(asset('images/iphone15Pro.jfif'), $image->getUrl());
     }
 
-    public function test_it_falls_back_to_storage_for_an_unknown_relative_path(): void
+    public function test_it_uses_placeholder_for_an_unknown_relative_path(): void
     {
         $image = new ProductImage(['image_path' => 'products/missing.jpg']);
 
-        $this->assertSame(asset('storage/products/missing.jpg'), $image->getUrl());
+        $this->assertSame(asset('images/product-placeholder.svg'), $image->getUrl());
     }
 }

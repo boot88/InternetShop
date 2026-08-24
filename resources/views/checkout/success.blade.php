@@ -1,15 +1,6 @@
 @extends('layouts.app')
-
-@section('title', 'Заказ принят — TechZone')
-
+@section('title', 'Заказ принят — '.config('store.name', 'TechZone'))
+@section('robots', 'noindex,nofollow')
 @section('content')
-<section class="bg-slate-50 py-16 sm:py-24">
-  <div class="mx-auto max-w-xl px-4 text-center sm:px-6">
-    <div class="mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-100 text-3xl text-emerald-700">✓</div>
-    <h1 class="mt-6 text-3xl font-semibold tracking-tight text-slate-950">Заказ принят</h1>
-    <p class="mt-3 text-slate-600">Номер заказа: <span class="font-semibold text-slate-900">{{ $order->order_number }}</span>. Мы свяжемся с вами для подтверждения.</p>
-    <p class="mt-2 text-lg font-semibold text-slate-950">{{ number_format($order->total, 0, ',', ' ') }} ₽</p>
-    <a href="{{ route('products.index') }}" class="mt-8 inline-flex rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white hover:bg-indigo-700">Вернуться в каталог</a>
-  </div>
-</section>
+<section class="mx-auto max-w-3xl px-4 py-14 sm:px-6"><div class="rounded-3xl bg-white p-6 ring-1 ring-slate-200 sm:p-8"><div class="grid h-14 w-14 place-items-center rounded-full bg-emerald-100 text-2xl text-emerald-700">✓</div><h1 class="mt-5 text-3xl font-semibold text-slate-950">Заказ принят</h1><p class="mt-2 text-slate-600">Номер: <span class="font-semibold text-slate-900">{{ $order->order_number }}</span></p><p class="mt-1 text-sm text-slate-500">Сохраните номер заказа. Менеджер подтвердит доставку и итоговую сумму до оплаты.</p><ul class="mt-6 divide-y divide-slate-100 rounded-2xl bg-slate-50 px-4">@foreach($order->items as $item)<li class="flex justify-between gap-4 py-3 text-sm"><span>{{ $item->product_name }} × {{ $item->quantity }}</span><span class="font-semibold">{{ number_format($item->total,0,',',' ') }} ₽</span></li>@endforeach</ul><div class="mt-5 flex justify-between text-lg font-semibold"><span>Итого без доставки</span><span>{{ number_format($order->total,0,',',' ') }} ₽</span></div><div class="mt-6 flex flex-wrap gap-3">@auth<a href="{{ route('orders.show',$order) }}" class="rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white">Открыть заказ</a>@endauth<a href="{{ route('products.index') }}" class="rounded-xl border border-slate-200 px-5 py-3 font-semibold text-slate-700">Вернуться в каталог</a></div></div></section>
 @endsection
