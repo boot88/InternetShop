@@ -6,11 +6,21 @@ use App\Models\Product;
 use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Tests\TestCase;
 
 class StorefrontFlowTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Keeps HTTP flow tests independent from a cached production config.
+        // CSRF remains enabled for the actual application.
+        $this->withoutMiddleware(VerifyCsrfToken::class);
+    }
 
     public function test_guest_can_add_an_available_product_to_cart(): void
     {
