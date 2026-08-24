@@ -96,12 +96,12 @@ class ProductController extends Controller
         });
     }
 
-    $products = match ($sort) {
+    $products = (match ($sort) {
         'price_asc' => $productsQuery->orderBy('price'),
         'price_desc' => $productsQuery->orderByDesc('price'),
         'newest' => $productsQuery->latest(),
         default => $productsQuery->orderByDesc('is_featured')->latest(),
-    }->paginate(12)
+    })->paginate(12)
         ->appends($request->query());
 
     // --- Списки для фильтров
