@@ -8,6 +8,8 @@
   <title>@yield('title', config('app.name', 'TechZone'))</title>
   <meta name="description" content="@yield('meta_description', 'TechZone — каталог электроники, актуальные цены и оформление заказа онлайн.')">
   <link rel="canonical" href="{{ url()->current() }}">
+  <link rel="preconnect" href="https://cdn.tailwindcss.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   
   <link rel="icon" href="{{ asset('favicon.svg') }}" type="image/svg+xml">
   <link rel="icon" href="{{ asset('favicon.png') }}" type="image/png" sizes="32x32">
@@ -53,19 +55,21 @@
         </a>
 
         <!-- Search (desktop) -->
-        <form action="{{ route('products.search') }}" method="GET" class="hidden md:block w-full max-w-xl">
+        <form action="{{ route('products.search') }}" method="GET" class="hidden md:block w-full max-w-xl" data-search-form>
           <div class="relative">
-            <input name="q" value="{{ request('q') }}" placeholder="Поиск: смартфоны, ноутбуки, наушники…"
+            <input name="q" value="{{ request('q') }}" placeholder="Поиск: смартфоны, ноутбуки, наушники…" autocomplete="off" data-search-input
               class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 pr-12 text-sm outline-none
                      focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400" />
             <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50">
               Найти
             </button>
+            <div data-search-suggestions class="absolute inset-x-0 top-full z-50 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"></div>
           </div>
         </form>
 
         <!-- Actions -->
         <div class="flex items-center gap-2">
+          <a href="tel:{{ preg_replace('/[^+0-9]/', '', config('store.phone')) }}" class="hidden lg:inline-flex rounded-xl px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">{{ config('store.phone') }}</a>
           <a href="{{ route('deals') }}" class="hidden sm:inline-flex rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Акции</a>
           <a href="{{ route('products.index') }}" class="hidden sm:inline-flex rounded-xl px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100">Каталог</a>
 
@@ -90,9 +94,10 @@
 
       <!-- Mobile dropdown -->
       <div class="md:hidden pb-3" x-cloak x-show="open" @click.outside="open=false">
-        <form action="{{ route('products.search') }}" method="GET" class="mt-3">
-          <input name="q" value="{{ request('q') }}" placeholder="Поиск товаров…"
+        <form action="{{ route('products.search') }}" method="GET" class="mt-3" data-search-form>
+          <div class="relative"><input name="q" value="{{ request('q') }}" placeholder="Поиск товаров…" autocomplete="off" data-search-input
                  class="w-full rounded-2xl border border-slate-200 bg-white px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400"/>
+          <div data-search-suggestions class="absolute inset-x-0 top-full z-50 mt-2 hidden overflow-hidden rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"></div></div>
         </form>
         <div class="mt-3 grid grid-cols-2 gap-2">
           <a href="{{ route('products.index') }}" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">Каталог</a>
@@ -101,6 +106,7 @@
           <a href="{{ route('returns') }}" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">Возврат</a>
           <a href="{{ route('faq') }}" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">FAQ</a>
           <a href="{{ route('contacts') }}" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">Контакты</a>
+          <a href="{{ route('about') }}" class="rounded-2xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium hover:bg-slate-50">О магазине</a>
         </div>
       </div>
     </div>
@@ -131,11 +137,12 @@
           <a class="block text-slate-600 hover:text-slate-900" href="{{ route('products.index') }}">Каталог</a>
           <a class="block text-slate-600 hover:text-slate-900" href="{{ route('deals') }}">Акции</a>
           <a class="block text-slate-600 hover:text-slate-900" href="{{ route('contacts') }}">Контакты</a>
+          <a class="block text-slate-600 hover:text-slate-900" href="{{ route('about') }}">О магазине</a>
         </div>
         <div class="space-y-2 text-sm">
           <div class="font-semibold text-slate-900">Поддержка</div>
-          <p class="text-slate-600">Пн–Вс 10:00–20:00</p>
-          <p class="text-slate-600">info@Marketing.com</p>
+          <p class="text-slate-600">{{ config('store.hours') }}</p>
+          <a class="block text-slate-600 hover:text-slate-900" href="mailto:{{ config('store.email') }}">{{ config('store.email') }}</a>
         </div>
       </div>
       <div class="mt-10 text-xs text-slate-500">© {{ date('Y') }} TechZone</div>
@@ -386,6 +393,36 @@
           showToast('Ошибка сети');
         }
       }, true);
+    })();
+  </script>
+
+  <script>
+    (() => {
+      const endpoint = @json(route('products.suggestions'));
+      const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[char]));
+
+      document.querySelectorAll('[data-search-form]').forEach((form) => {
+        const input = form.querySelector('[data-search-input]');
+        const box = form.querySelector('[data-search-suggestions]');
+        let timer;
+        if (!input || !box) return;
+
+        input.addEventListener('input', () => {
+          clearTimeout(timer);
+          const query = input.value.trim();
+          if (query.length < 2) { box.classList.add('hidden'); box.innerHTML = ''; return; }
+          timer = setTimeout(async () => {
+            try {
+              const response = await fetch(endpoint + '?q=' + encodeURIComponent(query), { headers: { Accept: 'application/json' } });
+              const { items = [] } = await response.json();
+              box.innerHTML = items.length ? items.map((item) => `<a href="${escapeHtml(item.url)}" class="flex items-center gap-3 rounded-xl p-2 hover:bg-slate-50"><img class="h-10 w-10 rounded-lg bg-slate-50 object-contain" src="${escapeHtml(item.image)}" alt=""><span class="min-w-0 flex-1"><span class="block truncate text-sm font-medium text-slate-900">${escapeHtml(item.name)}</span><span class="block text-xs text-slate-500">${escapeHtml(item.brand)} · ${item.available ? 'В наличии' : 'Нет в наличии'}</span></span><span class="text-xs font-semibold text-slate-900">${escapeHtml(item.price)}</span></a>`).join('') : '<p class="px-3 py-2 text-sm text-slate-500">Ничего не найдено</p>';
+              box.classList.remove('hidden');
+            } catch (_) { box.classList.add('hidden'); }
+          }, 180);
+        });
+        input.addEventListener('blur', () => setTimeout(() => box.classList.add('hidden'), 150));
+        input.addEventListener('focus', () => { if (box.innerHTML) box.classList.remove('hidden'); });
+      });
     })();
   </script>
 

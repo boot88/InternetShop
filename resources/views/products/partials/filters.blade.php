@@ -4,6 +4,15 @@
 @endphp
 
 <form method="GET" action="{{ route('products.index') }}" class="space-y-6" data-filters-form>
+  <input type="hidden" name="sort" value="{{ $sort ?? 'recommended' }}">
+
+  <div>
+    <h3 class="font-semibold">Наличие</h3>
+    <label class="mt-3 flex items-center gap-2 text-sm">
+      <input data-filter-input type="checkbox" name="in_stock" value="1" @checked($inStockOnly ?? false)>
+      <span>Только в наличии</span>
+    </label>
+  </div>
 
   {{-- Категории --}}
   <div>

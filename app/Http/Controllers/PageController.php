@@ -72,10 +72,10 @@ class PageController extends Controller
     public function contacts(): View
     {
         $contacts = [
-            'phone' => '+7 (999) 999-99-99',
-            'email' => 'info@store.com',
-            'address' => 'г. Москва, ул. Примерная, д. 1',
-            'work_hours' => 'Пн-Пт: 9:00-18:00, Сб-Вс: 10:00-16:00'
+            'phone' => config('store.phone'),
+            'email' => config('store.email'),
+            'address' => config('store.address'),
+            'work_hours' => config('store.hours'),
         ];
 
         return view('pages.contacts', compact('contacts'), [
@@ -85,6 +85,11 @@ class PageController extends Controller
                 ['name' => 'Контакты', 'url' => route('contacts')]
             ]
         ]);
+    }
+
+    public function about(): View
+    {
+        return view('pages.about', ['store' => config('store')]);
     }
 
     public function contactSubmit(Request $request)

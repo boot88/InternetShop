@@ -16,6 +16,7 @@ class SitemapController extends Controller
             ['loc' => route('returns'), 'priority' => '0.6'],
             ['loc' => route('faq'), 'priority' => '0.5'],
             ['loc' => route('contacts'), 'priority' => '0.6'],
+            ['loc' => route('about'), 'priority' => '0.5'],
         ])->merge(
             Product::active()->select(['slug', 'updated_at'])->get()->map(fn (Product $product) => [
                 'loc' => route('products.show', $product->slug),

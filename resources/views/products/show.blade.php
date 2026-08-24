@@ -1,6 +1,7 @@
 @extends('layouts.app')
 
 @section('title', $product->name . ' — TechZone')
+@section('meta_description', \Illuminate\Support\Str::limit($product->meta_description ?: $product->short_description ?: $product->description ?: ($product->name . ' — характеристики, наличие и условия покупки.'), 155))
 
 @section('content')
 <style>
@@ -30,9 +31,9 @@
             $mainImg = $product->main_image?->getUrl();
          @endphp
 
-          <div class="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
+          <div class="aspect-square overflow-hidden rounded-2xl bg-slate-50 p-4">
             @if($mainImg)
-              <img src="{{ $mainImg }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
+              <img src="{{ $mainImg }}" alt="{{ $product->name }}" class="h-full w-full object-contain" fetchpriority="high" width="1200" height="1200">
             @else
               <div class="h-full w-full grid place-items-center text-slate-500 text-sm">Нет фото</div>
             @endif
@@ -44,7 +45,7 @@
                 @php $src = $img->getUrl(); @endphp
                 <div class="aspect-square overflow-hidden rounded-2xl bg-slate-100">
                   @if($src)
-                    <img src="{{ $src }}" alt="" class="h-full w-full object-cover">
+                    <img src="{{ $src }}" alt="{{ $img->alt_text ?? $product->name }}" class="h-full w-full object-contain" loading="lazy" decoding="async">
                   @endif
                 </div>
               @endforeach
@@ -66,7 +67,7 @@
           <div class="flex items-start justify-between gap-4">
             <div>
               <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ $product->name }}</h1>
-              <p class="mt-1 text-sm text-slate-600">Официальная гарантия • Быстрая доставка</p>
+              <p class="mt-1 text-sm text-slate-600">Гарантия производителя • проверка перед отправкой</p>
             </div>
             <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $product->in_stock ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">
               {{ $product->in_stock ? 'В наличии' : 'Нет в наличии' }}
@@ -106,21 +107,43 @@
 
           <div class="mt-4 grid grid-cols-1 gap-3 text-sm">
             <div class="rounded-2xl bg-slate-50 p-4">
-              <div class="font-semibold text-slate-900">Доставка</div>
-              <div class="mt-1 text-slate-600">По городу и в регионы. Сроки уточним при оформлении.</div>
+              <div class="font-semibold text-slate-900">Наличие и доставка</div>
+              <div class="mt-1 text-slate-600">{{ $product->in_stock ? 'На складе: ' . $product->stock_quantity . ' шт. Срок доставки подтвердим до оплаты.' : 'Сейчас нет на складе — оставьте запрос, чтобы узнать дату поставки.' }}</div>
             </div>
             <div class="rounded-2xl bg-slate-50 p-4">
               <div class="font-semibold text-slate-900">Оплата</div>
-              <div class="mt-1 text-slate-600">Картой онлайн, при получении или по счёту.</div>
+              <div class="mt-1 text-slate-600">Способ оплаты и итоговую сумму менеджер подтверждает перед оформлением.</div>
             </div>
             <div class="rounded-2xl bg-slate-50 p-4">
               <div class="font-semibold text-slate-900">Возврат</div>
-              <div class="mt-1 text-slate-600">14 дней при сохранении товарного вида.</div>
+              <div class="mt-1 text-slate-600"><a class="font-medium text-indigo-700 hover:text-indigo-800" href="{{ route('returns') }}">Условия возврата</a> зависят от категории и статуса товара — проверьте их до оплаты.</div>
             </div>
           </div>
         </div>
       </aside>
     </div>
+
+    <section class="mt-6 grid gap-6 lg:grid-cols-12">
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-7">
+        <h2 class="text-base font-semibold text-slate-900">Характеристики</h2>
+        <dl class="mt-4 divide-y divide-slate-100 text-sm">
+          <div class="grid grid-cols-2 gap-4 py-3"><dt class="text-slate-500">Бренд</dt><dd class="font-medium text-slate-900">{{ $product->brand?->name ?? '—' }}</dd></div>
+          <div class="grid grid-cols-2 gap-4 py-3"><dt class="text-slate-500">Артикул</dt><dd class="font-medium text-slate-900">{{ $product->sku ?: '—' }}</dd></div>
+          <div class="grid grid-cols-2 gap-4 py-3"><dt class="text-slate-500">Категория</dt><dd class="font-medium text-slate-900">{{ $product->categories->pluck('name')->implode(', ') ?: '—' }}</dd></div>
+        </dl>
+      </div>
+      <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-5">
+        <h2 class="text-base font-semibold text-slate-900">Отзывы</h2>
+        @if($product->reviews->isNotEmpty())
+          <p class="mt-3 text-sm text-slate-600">Средняя оценка: <span class="font-semibold text-slate-900">{{ number_format($product->reviews->avg('rating'), 1, ',', ' ') }}/5</span> · {{ $product->reviews->count() }} шт.</p>
+          @foreach($product->reviews->take(2) as $review)
+            <article class="mt-4 border-t border-slate-100 pt-4 text-sm"><p class="font-medium text-slate-900">{{ $review->user?->name ?? 'Покупатель' }} · {{ $review->rating }}/5</p><p class="mt-1 text-slate-600">{{ $review->comment }}</p></article>
+          @endforeach
+        @else
+          <p class="mt-3 text-sm text-slate-600">Проверенных отзывов пока нет.</p>
+        @endif
+      </div>
+    </section>
   </div>
 </section>
 @endsection

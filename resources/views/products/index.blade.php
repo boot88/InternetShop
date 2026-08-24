@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="mx-auto max-w-7xl px-4 py-6">
-  <div class="flex items-center justify-between gap-4">
+  <div class="flex flex-wrap items-center justify-between gap-4">
     <h1 class="text-2xl font-semibold tracking-tight">Каталог</h1>
 
     {{-- Mobile filters button --}}
@@ -11,6 +11,22 @@
       <span>Фильтры</span>
       <span class="text-slate-500">({{ $products->total() }})</span>
     </button>
+    <form method="GET" action="{{ route('products.index') }}" class="flex items-center gap-2 text-sm">
+      @foreach(request()->except('sort', 'page') as $key => $value)
+        @if(is_array($value))
+          @foreach($value as $nestedValue)<input type="hidden" name="{{ $key }}[]" value="{{ $nestedValue }}">@endforeach
+        @else
+          <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+        @endif
+      @endforeach
+      <label for="catalog-sort" class="hidden sm:block text-slate-600">Сортировка</label>
+      <select id="catalog-sort" name="sort" onchange="this.form.submit()" class="rounded-xl border-slate-200 bg-white py-2 pl-3 pr-8 font-medium focus:border-indigo-500 focus:ring-indigo-500">
+        <option value="recommended" @selected($sort === 'recommended')>Рекомендуемые</option>
+        <option value="newest" @selected($sort === 'newest')>Сначала новые</option>
+        <option value="price_asc" @selected($sort === 'price_asc')>Сначала дешевле</option>
+        <option value="price_desc" @selected($sort === 'price_desc')>Сначала дороже</option>
+      </select>
+    </form>
   </div>
 
   <div class="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-4">
@@ -42,6 +58,23 @@
       </div>
     </section>
   </div>
+</div>
+
+<div id="quickView" class="fixed inset-0 z-[60] hidden" aria-hidden="true">
+  <div data-quick-view-close class="absolute inset-0 bg-slate-950/40"></div>
+  <section class="absolute inset-x-4 top-1/2 mx-auto max-w-lg -translate-y-1/2 rounded-3xl bg-white p-5 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="quickViewName">
+    <button type="button" data-quick-view-close class="absolute right-4 top-4 rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Закрыть">×</button>
+    <div class="grid grid-cols-[128px_1fr] gap-4">
+      <div class="aspect-square rounded-2xl bg-slate-50 p-2"><img id="quickViewImage" class="h-full w-full object-contain" alt=""></div>
+      <div>
+        <p id="quickViewBrand" class="text-xs text-slate-500"></p>
+        <h2 id="quickViewName" class="mt-1 pr-8 text-lg font-semibold text-slate-900"></h2>
+        <p id="quickViewPrice" class="mt-3 text-xl font-semibold"></p>
+        <p id="quickViewStock" class="mt-2 text-sm"></p>
+        <a id="quickViewLink" class="mt-4 inline-flex rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800">Открыть товар</a>
+      </div>
+    </div>
+  </section>
 </div>
 
 {{-- Mobile off-canvas --}}
@@ -255,6 +288,26 @@
   // init
   attachHandlers(document.getElementById('filtersSidebar'));
   attachHandlers(document.getElementById('filtersDrawerInner'));
+
+  const quickView = document.getElementById('quickView');
+  document.addEventListener('click', (event) => {
+    const trigger = event.target.closest('[data-quick-view]');
+    if (trigger) {
+      document.getElementById('quickViewName').textContent = trigger.dataset.name || '';
+      document.getElementById('quickViewBrand').textContent = trigger.dataset.brand || '';
+      document.getElementById('quickViewPrice').textContent = trigger.dataset.price || '';
+      document.getElementById('quickViewStock').textContent = trigger.dataset.stock || '';
+      document.getElementById('quickViewImage').src = trigger.dataset.image || '';
+      document.getElementById('quickViewImage').alt = trigger.dataset.name || '';
+      document.getElementById('quickViewLink').href = trigger.dataset.url || '#';
+      quickView?.classList.remove('hidden');
+      quickView?.setAttribute('aria-hidden', 'false');
+    }
+    if (event.target.closest('[data-quick-view-close]')) {
+      quickView?.classList.add('hidden');
+      quickView?.setAttribute('aria-hidden', 'true');
+    }
+  });
 })();
 </script>
 @endsection

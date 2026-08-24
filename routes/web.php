@@ -22,6 +22,7 @@ Route::get('/deals',     [PageController::class, 'deals'])->name('deals');
 Route::get('/returns',   [PageController::class, 'returns'])->name('returns');
 Route::get('/faq',       [PageController::class, 'faq'])->name('faq');
 Route::get('/contacts',  [PageController::class, 'contacts'])->name('contacts');
+Route::get('/about',     [PageController::class, 'about'])->name('about');
 Route::post('/contact-submit', [PageController::class, 'contactSubmit'])->name('contact.submit');
 
 // Аутентификация
@@ -33,6 +34,7 @@ Route::post('/logout',  [AuthController::class, 'logout'])->name('logout');
 
 // Товары (ВАЖНО: search ДО {slug})
 Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
+Route::get('/products/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');
 Route::get('/products',        [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 

@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
         //ProductVariantAttributesTableSeeder::class,
         StocksTableSeeder::class,
         ExtendedProductImagesTableSeeder::class,
+        LocalProductImagesSeeder::class,
         // ReviewsTableSeeder должен быть после UsersTableSeeder
         ReviewsTableSeeder::class,
         CouponsTableSeeder::class,

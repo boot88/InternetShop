@@ -22,6 +22,11 @@ class ProductController extends Controller
 
     // --- Текущие выбранные значения
     $selectedCategory = $request->integer('category') ?: null;
+    $inStockOnly = $request->boolean('in_stock');
+    $sort = $request->string('sort', 'recommended')->toString();
+    if (! in_array($sort, ['recommended', 'price_asc', 'price_desc', 'newest'], true)) {
+        $sort = 'recommended';
+    }
 
     $selectedBrands = collect($request->input('brands', []))
         ->filter(fn($v) => $v !== null && $v !== '')
@@ -84,9 +89,19 @@ class ProductController extends Controller
         $productsQuery->whereIn('brand_id', $selectedBrands);
     }
 
-    $products = $productsQuery
-        ->orderByDesc('created_at')
-        ->paginate(12)
+    if ($inStockOnly) {
+        $productsQuery->where(function ($query) {
+            $query->whereHas('stock', fn ($stock) => $stock->where('quantity', '>', 0))
+                ->orWhereHas('variants.stock', fn ($stock) => $stock->where('quantity', '>', 0));
+        });
+    }
+
+    $products = match ($sort) {
+        'price_asc' => $productsQuery->orderBy('price'),
+        'price_desc' => $productsQuery->orderByDesc('price'),
+        'newest' => $productsQuery->latest(),
+        default => $productsQuery->orderByDesc('is_featured')->latest(),
+    }->paginate(12)
         ->appends($request->query());
 
     // --- Списки для фильтров
@@ -142,7 +157,7 @@ class ProductController extends Controller
         return response()->json([
             'filtersHtml' => view('products.partials.filters', compact(
                 'categories', 'brands', 'categoryCounts', 'brandCounts',
-                'rangeMin', 'rangeMax', 'priceMin', 'priceMax', 'selectedCategory', 'selectedBrands', 'search'
+                'rangeMin', 'rangeMax', 'priceMin', 'priceMax', 'selectedCategory', 'selectedBrands', 'search', 'inStockOnly', 'sort'
             ))->render(),
             'gridHtml' => view('products.partials.grid', compact('products'))->render(),
         ]);
@@ -161,7 +176,9 @@ class ProductController extends Controller
         'priceMax',
         'selectedCategory',
         'selectedBrands',
-        'search'
+        'search',
+        'inStockOnly',
+        'sort'
     ));
 }
 	
@@ -178,7 +195,7 @@ class ProductController extends Controller
                 $query->where('is_active', true)->with(['stock', 'attributeValues']);
             },
             'reviews' => function ($query) {
-                $query->where('is_approved', true);
+                $query->where('is_approved', true)->with('user');
             }
         ])->active();
 
@@ -201,7 +218,7 @@ class ProductController extends Controller
 	/**
      * Поиск товаров
      */
-    public function search(Request $request)
+	public function search(Request $request)
 {
     $q = trim((string) $request->input('q', ''));
 
@@ -215,6 +232,37 @@ class ProductController extends Controller
         'search' => $q, // приводим к единому параметру
     ]);
 }
+
+    /** Lightweight suggestions for the catalogue search field. */
+    public function suggestions(Request $request)
+    {
+        $query = trim((string) $request->input('q', ''));
+
+        if (mb_strlen($query) < 2) {
+            return response()->json(['items' => []]);
+        }
+
+        $products = Product::query()
+            ->with(['images', 'brand', 'stock', 'variants.stock'])
+            ->active()
+            ->where(function ($builder) use ($query) {
+                $builder->where('name', 'like', "%{$query}%")
+                    ->orWhere('sku', 'like', "%{$query}%");
+            })
+            ->orderByDesc('is_featured')
+            ->limit(6)
+            ->get()
+            ->map(fn (Product $product) => [
+                'name' => $product->name,
+                'brand' => $product->brand?->name,
+                'url' => route('products.show', $product->slug),
+                'image' => $product->main_image?->getUrl(),
+                'price' => number_format($product->final_price, 0, ',', ' ') . ' ₽',
+                'available' => $product->in_stock,
+            ]);
+
+        return response()->json(['items' => $products]);
+    }
 	
 	
 }
