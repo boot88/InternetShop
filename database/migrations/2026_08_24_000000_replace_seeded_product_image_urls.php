@@ -21,7 +21,7 @@ return new class extends Migration
         26 => 'images/666c6648431ea.webp', 27 => 'images/photo-1541807084-5c52b6b3adef.jfif',
         28 => 'images/boesquetultra.avif', 29 => 'images/jblflip6.jfif', 30 => 'images/marshall.jfif',
         31 => 'images/nikonz9.jfif', 32 => 'images/nikonz9.jfif', 33 => 'images/photo-1700125621736-75a6d245a308.avif',
-        34 => 'images/djimini.avif', 35 => 'images/tcl.jpg',
+        34 => 'images/djimini.webp', 35 => 'images/tcl.jpg',
     ];
 
     public function up(): void

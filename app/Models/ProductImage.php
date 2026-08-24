@@ -50,7 +50,7 @@ class ProductImage extends Model
         31 => 'nikonz9.jfif',
         32 => 'nikonz9.jfif',
         33 => 'photo-1700125621736-75a6d245a308.avif',
-        34 => 'djimini.avif',
+        34 => 'djimini.webp',
         35 => 'tcl.jpg',
     ];
 
@@ -82,6 +82,13 @@ class ProductImage extends Model
         }
 
         $localSeededImage = self::SEEDED_LOCAL_IMAGES[$this->product_id] ?? null;
+
+        // Some web servers do not send AVIF with an image MIME type. The DJI
+        // photo has a WebP copy so it displays consistently in all browsers.
+        if (str_ends_with(ltrim($p, '/'), 'djimini.avif')
+            && is_file(public_path('images/djimini.webp'))) {
+            return asset('images/djimini.webp');
+        }
 
         // Databases created before local photos were added keep their old
         // Unsplash URLs.  Prefer the bundled files for those rows right away;
