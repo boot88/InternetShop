@@ -16,5 +16,8 @@ return [
     'delivery_note' => env('STORE_DELIVERY_NOTE', 'Самовывоз, СДЭК или Почта России: срок и стоимость подтверждаются менеджером до предоплаты.'),
     'warranty_note' => env('STORE_WARRANTY_NOTE', 'Гарантийный срок и порядок сервиса указаны в документах конкретного товара. При обращении подготовьте номер заказа.'),
     'analytics_id' => env('YANDEX_METRIKA_ID'),
-    'admin_emails' => array_values(array_filter(array_map('trim', explode(',', (string) env('STORE_ADMIN_EMAILS', 'administrator@marketing.ru'))))),
+    'admin_emails' => array_values(array_unique(array_filter(array_map(
+        static fn ($email) => strtolower(trim($email)),
+        explode(',', (string) env('STORE_ADMIN_EMAILS', 'administrator@marketing.ru'))
+    ), static fn ($email) => filter_var($email, FILTER_VALIDATE_EMAIL) !== false))),
 ];

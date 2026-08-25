@@ -48,7 +48,13 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function isAdmin(): bool
     {
-        return $this->is_admin || in_array(strtolower($this->email), array_map('strtolower', config('store.admin_emails', [])), true);
+        $email = strtolower(trim((string) $this->email));
+        $adminEmails = array_map(
+            static fn ($adminEmail) => strtolower(trim((string) $adminEmail)),
+            config('store.admin_emails', [])
+        );
+
+        return $this->is_admin || in_array($email, $adminEmails, true);
     }
  
     public function currentCart()

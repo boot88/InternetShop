@@ -112,7 +112,16 @@ class AuthController extends Controller
             return redirect()->route('profile.edit')->with('info', 'Аккаунт создан, но письмо подтверждения не отправлено. Проверьте настройки почты.');
         }
 
-        return redirect()->route('verification.notice')->with('success', 'Аккаунт создан. Подтвердите email по ссылке в письме.');
+        // If the visitor came from a protected page, Laravel keeps that URL in
+        // the session. This is especially important for the configured store
+        // administrator: after registration they should arrive in the admin
+        // area instead of having to start the sign-in flow again.
+        $defaultDestination = $user->isAdmin()
+            ? route('admin.dashboard')
+            : route('verification.notice');
+
+        return redirect()->intended($defaultDestination)
+            ->with('success', 'Аккаунт создан. Подтвердите email по ссылке в письме.');
     }
 
     public function showForgotPasswordForm()

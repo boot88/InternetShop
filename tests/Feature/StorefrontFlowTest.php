@@ -7,6 +7,7 @@ use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
 class StorefrontFlowTest extends TestCase
@@ -108,6 +109,25 @@ class StorefrontFlowTest extends TestCase
         $user = User::factory()->create(['is_admin' => false]);
 
         $this->actingAs($user)->get(route('admin.dashboard'))->assertForbidden();
+    }
+
+    public function test_configured_admin_is_logged_in_and_sent_to_admin_after_registration(): void
+    {
+        Notification::fake();
+        config()->set('store.admin_emails', ['administrator@marketing.ru']);
+
+        $response = $this->post(route('register'), [
+            'name' => 'Администратор',
+            'email' => 'Administrator@Marketing.ru',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+            'terms_consent' => '1',
+            'privacy_consent' => '1',
+        ]);
+
+        $response->assertRedirect(route('admin.dashboard'));
+        $this->assertAuthenticated();
+        $this->get(route('admin.dashboard'))->assertOk();
     }
 
     public function test_public_pages_do_not_expose_developer_placeholders(): void
