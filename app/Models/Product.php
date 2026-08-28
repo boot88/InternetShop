@@ -29,7 +29,12 @@ class Product extends Model
         'weight',
         'dimensions',
         'meta_title',
-        'meta_description'
+        'meta_description',
+        'model',
+        'country_of_origin',
+        'warranty_months',
+        'package_contents',
+        'price_verified_at',
     ];
 
     protected $casts = [
@@ -39,7 +44,9 @@ class Product extends Model
         'weight' => 'decimal:2',
         'is_featured' => 'boolean',
         'is_active' => 'boolean',
-        'has_variants' => 'boolean'
+        'has_variants' => 'boolean',
+        'warranty_months' => 'integer',
+        'price_verified_at' => 'datetime',
     ];
 
     public function brand(): BelongsTo
@@ -76,7 +83,7 @@ class Product extends Model
 
     public function getMainImageAttribute()
     {
-        return $this->images->where('is_main', true)->first() 
+        return $this->images->where('is_main', true)->first()
             ?? $this->images->first();
     }
 
@@ -85,7 +92,7 @@ class Product extends Model
         if ($this->uses_variants) {
             return $this->variants->where('is_active', true)->min('price') ?? $this->price;
         }
-        
+
         // price is the selling price; compare_price is only the crossed-out old price.
         return $this->price;
     }
@@ -97,8 +104,21 @@ class Product extends Model
                 return $variant->is_active && $variant->has_discount;
             });
         }
-        
+
         return $this->compare_price && $this->compare_price > $this->price;
+    }
+
+    public function getOldPriceAttribute()
+    {
+        if ($this->uses_variants) {
+            return $this->variants
+                ->where('is_active', true)
+                ->filter->has_discount
+                ->sortBy('price')
+                ->first()?->compare_price;
+        }
+
+        return $this->has_discount ? $this->compare_price : null;
     }
 
     public function getAverageRatingAttribute()
@@ -118,7 +138,7 @@ class Product extends Model
                 return $variant->is_active && $variant->stock && $variant->stock->in_stock;
             });
         }
-        
+
         return $this->stock && $this->stock->in_stock;
     }
 
@@ -129,7 +149,7 @@ class Product extends Model
                 return $variant->is_active && $variant->stock ? $variant->stock->quantity : 0;
             });
         }
-        
+
         return $this->stock ? $this->stock->quantity : 0;
     }
 

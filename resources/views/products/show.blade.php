@@ -1,126 +1,29 @@
 @extends('layouts.app')
-
-@section('title', $product->name . ' — TechZone')
-
+@section('title', ($product->meta_title ?: $product->name).' — '.config('store.name','TechZone'))
+@section('meta_description', \Illuminate\Support\Str::limit($product->meta_description ?: $product->short_description ?: $product->description ?: $product->name, 155))
+@section('og_type','product')
+@section('og_image',$product->main_image?->getUrl() ?? asset('images/product-placeholder.svg'))
+@php
+  $schema = ['@context'=>'https://schema.org','@type'=>'Product','name'=>$product->name,'sku'=>$product->sku,'description'=>$product->short_description ?: $product->description,'image'=>$product->images->map(fn($image)=>$image->getUrl())->values(),'brand'=>$product->brand ? ['name'=>$product->brand->name,'@type'=>'Brand'] : null,'offers'=>['@type'=>'Offer','url'=>route('products.show',$product->slug),'priceCurrency'=>'RUB','price'=>(float)$product->final_price,'availability'=>$product->in_stock?'https://schema.org/InStock':'https://schema.org/OutOfStock','itemCondition'=>'https://schema.org/NewCondition']];
+  if($product->reviews->isNotEmpty()) $schema['aggregateRating']=['@type'=>'AggregateRating','ratingValue'=>round($product->reviews->avg('rating'),1),'reviewCount'=>$product->reviews->count()];
+@endphp
+@push('head')<script type="application/ld+json">@json(array_filter($schema), JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)</script>@endpush
 @section('content')
-<style>
-  .line-clamp-2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-</style>
-
-<section class="py-8">
-  <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-    <!-- Breadcrumbs -->
-    <nav class="mb-6 text-sm text-slate-600">
-      <ol class="flex flex-wrap items-center gap-2">
-        <li><a href="{{ route('home') }}" class="hover:text-slate-900">Главная</a></li>
-        <li class="text-slate-400">/</li>
-        <li><a href="{{ route('products.index') }}" class="hover:text-slate-900">Каталог</a></li>
-        <li class="text-slate-400">/</li>
-        <li class="text-slate-900 line-clamp-2">{{ $product->name }}</li>
-      </ol>
-    </nav>
-
-    <div class="grid gap-6 lg:grid-cols-12">
-      <!-- Gallery -->
-      <div class="lg:col-span-7">
-        <div class="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
-          @php
-           $mainImg = null;
-
-            $mainImg = $product->main_image?->getUrl();
-         @endphp
-
-          <div class="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
-            @if($mainImg)
-              <img src="{{ $mainImg }}" alt="{{ $product->name }}" class="h-full w-full object-cover">
-            @else
-              <div class="h-full w-full grid place-items-center text-slate-500 text-sm">Нет фото</div>
-            @endif
-          </div>
-
-          @if(isset($product->images) && method_exists($product->images, 'count') && $product->images->count() > 1)
-            <div class="mt-4 grid grid-cols-4 gap-3">
-              @foreach($product->images->take(8) as $img)
-                @php $src = $img->getUrl(); @endphp
-                <div class="aspect-square overflow-hidden rounded-2xl bg-slate-100">
-                  @if($src)
-                    <img src="{{ $src }}" alt="" class="h-full w-full object-cover">
-                  @endif
-                </div>
-              @endforeach
-            </div>
-          @endif
-        </div>
-
-        <div class="mt-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 class="text-base font-semibold text-slate-900">Описание</h2>
-          <p class="mt-3 text-sm leading-6 text-slate-700">
-            {{ $product->description ?? 'Описание скоро появится.' }}
-          </p>
-        </div>
-      </div>
-
-      <!-- Purchase box -->
-      <aside class="lg:col-span-5">
-        <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h1 class="text-2xl font-semibold tracking-tight text-slate-900">{{ $product->name }}</h1>
-              <p class="mt-1 text-sm text-slate-600">Официальная гарантия • Быстрая доставка</p>
-            </div>
-            <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold {{ $product->in_stock ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700' }}">
-              {{ $product->in_stock ? 'В наличии' : 'Нет в наличии' }}
-            </span>
-          </div>
-
-          <div class="mt-6 flex items-end justify-between">
-            <div class="text-3xl font-semibold text-slate-900">
-              {{ number_format($product->final_price, 0, ',', ' ') }} ₽
-            </div>
-            @if($product->compare_price && $product->compare_price > $product->price)
-              <div class="text-sm text-slate-500 line-through">
-                {{ number_format($product->compare_price, 0, ',', ' ') }} ₽
-              </div>
-            @endif
-          </div>
-
-          <form action="{{ route('cart.add', $product->id) }}" method="POST" class="mt-6" data-add-to-cart>
-            @csrf
-            @if($product->uses_variants)
-              <label class="block text-sm font-medium text-slate-800">
-                Вариант
-                <select name="variant_id" required class="mt-2 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">
-                  <option value="" selected disabled>Выберите вариант</option>
-                  @foreach($product->variants as $variant)
-                    <option value="{{ $variant->id }}" @disabled(!$variant->stock_quantity)>
-                      {{ $variant->attributeValues->pluck('value')->implode(' · ') ?: $variant->sku }} — {{ number_format($variant->final_price, 0, ',', ' ') }} ₽{{ $variant->stock_quantity ? '' : ' (нет в наличии)' }}
-                    </option>
-                  @endforeach
-                </select>
-              </label>
-            @endif
-            <button type="submit" data-add-to-cart-button @disabled(!$product->in_stock) class="mt-4 w-full rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300">
-              {{ $product->in_stock ? 'Добавить в корзину' : 'Нет в наличии' }}
-            </button>
-          </form>
-
-          <div class="mt-4 grid grid-cols-1 gap-3 text-sm">
-            <div class="rounded-2xl bg-slate-50 p-4">
-              <div class="font-semibold text-slate-900">Доставка</div>
-              <div class="mt-1 text-slate-600">По городу и в регионы. Сроки уточним при оформлении.</div>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4">
-              <div class="font-semibold text-slate-900">Оплата</div>
-              <div class="mt-1 text-slate-600">Картой онлайн, при получении или по счёту.</div>
-            </div>
-            <div class="rounded-2xl bg-slate-50 p-4">
-              <div class="font-semibold text-slate-900">Возврат</div>
-              <div class="mt-1 text-slate-600">14 дней при сохранении товарного вида.</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-    </div>
-  </div>
-</section>
+<section class="py-8"><div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+<nav class="mb-6 text-sm text-slate-500"><ol class="flex flex-wrap gap-2"><li><a href="{{ route('home') }}">Главная</a></li><li>/</li><li><a href="{{ route('products.index') }}">Каталог</a></li><li>/</li><li class="text-slate-900">{{ $product->name }}</li></ol></nav>
+<div class="grid gap-6 lg:grid-cols-12">
+  <div class="lg:col-span-7"><div class="rounded-3xl bg-white p-4 ring-1 ring-slate-200"><button type="button" data-gallery-open class="block aspect-square w-full overflow-hidden rounded-2xl bg-slate-50 p-4"><img id="productMainImage" src="{{ $product->main_image?->getUrl() ?? asset('images/product-placeholder.svg') }}" alt="{{ $product->main_image?->alt_text ?: $product->name }}" class="h-full w-full object-contain" fetchpriority="high" width="1200" height="1200"></button>@if($product->images->count()>1)<div class="mt-4 flex gap-3 overflow-x-auto pb-1">@foreach($product->images as $image)<button type="button" data-gallery-thumb data-src="{{ $image->getUrl() }}" data-alt="{{ $image->alt_text ?: $product->name }}" class="h-20 w-20 shrink-0 rounded-xl border border-slate-200 bg-slate-50 p-2 focus:border-indigo-500"><img src="{{ $image->getUrl() }}" alt="" class="h-full w-full object-contain" loading="lazy"></button>@endforeach</div>@endif</div>
+  <div class="mt-6 rounded-3xl bg-white p-6 ring-1 ring-slate-200"><h2 class="text-lg font-semibold text-slate-950">Описание</h2><div class="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">{{ $product->description ?: $product->short_description ?: 'Подробное описание уточняется.' }}</div>@if($product->package_contents)<h3 class="mt-6 font-semibold text-slate-950">Комплектация</h3><p class="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">{{ $product->package_contents }}</p>@endif</div></div>
+  <aside class="lg:col-span-5"><div class="sticky top-24 rounded-3xl bg-white p-6 ring-1 ring-slate-200"><div class="flex items-start justify-between gap-4"><div><p class="text-sm text-slate-500">{{ $product->brand?->name }}@if($product->model) · {{ $product->model }}@endif</p><h1 class="mt-1 text-2xl font-semibold tracking-tight text-slate-950">{{ $product->name }}</h1></div><span id="productStockBadge" class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $product->in_stock?'bg-emerald-50 text-emerald-700':'bg-slate-100 text-slate-600' }}">{{ $product->in_stock?'В наличии':'Нет в наличии' }}</span></div>
+  <div class="mt-6 flex items-end gap-3"><span id="productPrice" class="text-3xl font-semibold text-slate-950">{{ number_format($product->final_price,0,',',' ') }} ₽</span>@if($product->old_price)<span class="text-sm text-slate-400 line-through">{{ number_format($product->old_price,0,',',' ') }} ₽</span>@endif</div>@if($product->price_verified_at)<p class="mt-1 text-xs text-slate-500">Цена проверена {{ $product->price_verified_at->format('d.m.Y') }}</p>@endif
+  <form action="{{ route('cart.add',$product) }}" method="POST" data-add-to-cart class="mt-6">@csrf<input type="hidden" name="quantity" value="1">@if($product->uses_variants)<label class="block text-sm font-medium">Вариант<select name="variant_id" required data-variant-select class="mt-2 w-full rounded-xl border-slate-300"><option value="">Выберите вариант</option>@foreach($product->variants as $variant)@php $variantImage=$variant->image ? (\Illuminate\Support\Str::startsWith($variant->image,['http://','https://'])?$variant->image:asset(ltrim($variant->image,'/'))) : ''; @endphp<option value="{{ $variant->id }}" data-price="{{ (float)$variant->final_price }}" data-stock="{{ $variant->stock_quantity }}" data-image="{{ $variantImage }}" @disabled(!$variant->stock_quantity)>{{ $variant->attributeValues->pluck('value')->implode(' · ') ?: $variant->sku }} — {{ number_format($variant->final_price,0,',',' ') }} ₽{{ $variant->stock_quantity?'':' (нет в наличии)' }}</option>@endforeach</select></label>@endif<button data-add-to-cart-button type="submit" @disabled(!$product->in_stock) class="mt-4 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">{{ $product->in_stock?'Добавить в корзину':'Нет в наличии' }}</button></form>
+  <div class="mt-5 space-y-3 text-sm"><div class="rounded-2xl bg-slate-50 p-4"><p class="font-semibold">Доставка</p><p class="mt-1 leading-6 text-slate-600">{{ config('store.delivery_note') }}</p></div><div class="rounded-2xl bg-slate-50 p-4"><p class="font-semibold">Гарантия</p><p class="mt-1 leading-6 text-slate-600">{{ $product->warranty_months ? $product->warranty_months.' мес. согласно документам товара.' : config('store.warranty_note') }}</p></div><div class="rounded-2xl bg-slate-50 p-4"><a href="{{ route('returns') }}" class="font-semibold text-indigo-700">Условия возврата →</a></div></div></div></aside>
+</div>
+<div class="mt-6 grid gap-6 lg:grid-cols-12"><section class="rounded-3xl bg-white p-6 ring-1 ring-slate-200 lg:col-span-7"><h2 class="text-lg font-semibold">Характеристики</h2><dl class="mt-4 divide-y divide-slate-100 text-sm">@foreach([['Бренд',$product->brand?->name],['Модель',$product->model],['Артикул',$product->sku],['Категория',$product->categories->pluck('name')->implode(', ')],['Страна',$product->country_of_origin],['Вес',$product->weight ? $product->weight.' кг':null],['Размеры',$product->dimensions],['Гарантия',$product->warranty_months ? $product->warranty_months.' мес.':null]] as [$label,$value])@if($value)<div class="grid grid-cols-2 gap-4 py-3"><dt class="text-slate-500">{{ $label }}</dt><dd class="font-medium text-slate-900">{{ $value }}</dd></div>@endif @endforeach @foreach($product->variants->flatMap->attributeValues->groupBy(fn($value)=>$value->attribute?->name ?: 'Вариант') as $attribute=>$values)<div class="grid grid-cols-2 gap-4 py-3"><dt class="text-slate-500">{{ $attribute }}</dt><dd class="font-medium text-slate-900">{{ $values->pluck('value')->unique()->implode(', ') }}</dd></div>@endforeach</dl></section>
+<section class="rounded-3xl bg-white p-6 ring-1 ring-slate-200 lg:col-span-5"><h2 class="text-lg font-semibold">Отзывы</h2>@if($product->reviews->isNotEmpty())<p class="mt-2 text-sm text-slate-600">{{ number_format($product->reviews->avg('rating'),1,',',' ') }}/5 · {{ $product->reviews->count() }} отзывов</p>@foreach($product->reviews as $review)<article class="mt-4 border-t border-slate-100 pt-4"><div class="flex justify-between gap-3 text-sm"><p class="font-semibold">{{ $review->user?->name ?: 'Покупатель' }}</p><p>{{ $review->rating }}/5</p></div>@if($review->title)<h3 class="mt-2 text-sm font-semibold">{{ $review->title }}</h3>@endif<p class="mt-1 text-sm leading-6 text-slate-600">{{ $review->comment }}</p><p class="mt-1 text-xs text-slate-400">{{ $review->created_at->format('d.m.Y') }}</p></article>@endforeach @else<p class="mt-3 text-sm text-slate-600">Проверенных отзывов пока нет.</p>@endif
+@if($canReview)<form action="{{ route('reviews.store',$product) }}" method="POST" class="mt-5 border-t pt-5">@csrf<h3 class="font-semibold">Ваш отзыв</h3><div class="mt-3 grid gap-3"><select name="rating" required class="rounded-xl border-slate-300"><option value="">Оценка</option>@for($i=5;$i>=1;$i--)<option value="{{ $i }}" @selected(old('rating',$userReview?->rating)==$i)>{{ $i }} из 5</option>@endfor</select><input name="title" value="{{ old('title',$userReview?->title) }}" placeholder="Заголовок" class="rounded-xl border-slate-300"><textarea name="comment" rows="4" required placeholder="Расскажите о товаре" class="rounded-xl border-slate-300">{{ old('comment',$userReview?->comment) }}</textarea><button class="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white">Отправить на проверку</button></div></form>@elseif(!auth()->check())<p class="mt-4 text-xs text-slate-500">Отзыв могут оставить авторизованные покупатели после доставки заказа.</p>@endif</section></div>
+@if($relatedProducts->isNotEmpty())<section class="mt-10"><div class="flex items-end justify-between"><h2 class="text-2xl font-semibold text-slate-950">Похожие товары</h2><a href="{{ route('products.index') }}" class="text-sm font-semibold text-indigo-700">Весь каталог</a></div><div class="mt-5">@include('products.partials.cards',['products'=>$relatedProducts])</div></section>@endif
+</div></section>
+<div id="galleryModal" class="fixed inset-0 z-[90] hidden bg-slate-950/90 p-4" role="dialog" aria-modal="true"><button data-gallery-close class="absolute right-5 top-5 rounded-full bg-white/10 px-4 py-2 text-2xl text-white" aria-label="Закрыть">×</button><img data-gallery-large src="" alt="" class="mx-auto h-full w-full object-contain"></div>
+@push('scripts')<script>(()=>{const main=document.getElementById('productMainImage');const modal=document.getElementById('galleryModal');const large=modal?.querySelector('[data-gallery-large]');document.querySelectorAll('[data-gallery-thumb]').forEach(button=>button.addEventListener('click',()=>{main.src=button.dataset.src;main.alt=button.dataset.alt||'';}));document.querySelector('[data-gallery-open]')?.addEventListener('click',()=>{if(!modal||!large)return;large.src=main.src;large.alt=main.alt;modal.classList.remove('hidden');document.body.classList.add('overflow-hidden')});function close(){modal?.classList.add('hidden');document.body.classList.remove('overflow-hidden')}modal?.querySelector('[data-gallery-close]')?.addEventListener('click',close);document.addEventListener('keydown',event=>{if(event.key==='Escape')close()});document.querySelector('[data-variant-select]')?.addEventListener('change',event=>{const option=event.target.selectedOptions[0];if(!option?.value)return;document.getElementById('productPrice').textContent=new Intl.NumberFormat('ru-RU').format(Number(option.dataset.price))+' ₽';const stock=Number(option.dataset.stock||0);const badge=document.getElementById('productStockBadge');badge.textContent=stock?'В наличии':'Нет в наличии';if(option.dataset.image)main.src=option.dataset.image;});})();</script>@endpush
 @endsection

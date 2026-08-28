@@ -6,6 +6,15 @@ use App\Models\Product;
 
 class SitemapController extends Controller
 {
+    public function robots()
+    {
+        return response(
+            "User-agent: *\nAllow: /\nDisallow: /cart\nDisallow: /checkout\nDisallow: /admin\nDisallow: /profile\nDisallow: /orders\n\nSitemap: ".route('sitemap')."\n",
+            200,
+            ['Content-Type' => 'text/plain; charset=UTF-8']
+        );
+    }
+
     public function __invoke()
     {
         $urls = collect([
@@ -16,11 +25,16 @@ class SitemapController extends Controller
             ['loc' => route('returns'), 'priority' => '0.6'],
             ['loc' => route('faq'), 'priority' => '0.5'],
             ['loc' => route('contacts'), 'priority' => '0.6'],
+            ['loc' => route('about'), 'priority' => '0.5'],
+            ['loc' => route('privacy'), 'priority' => '0.3'],
+            ['loc' => route('terms'), 'priority' => '0.3'],
+            ['loc' => route('requisites'), 'priority' => '0.4'],
         ])->merge(
-            Product::active()->select(['slug', 'updated_at'])->get()->map(fn (Product $product) => [
+            Product::active()->with('images')->select(['id', 'slug', 'updated_at'])->get()->map(fn (Product $product) => [
                 'loc' => route('products.show', $product->slug),
                 'lastmod' => $product->updated_at?->toDateString(),
                 'priority' => '0.8',
+                'images' => $product->images->map(fn ($image) => $image->getUrl())->all(),
             ])
         );
 

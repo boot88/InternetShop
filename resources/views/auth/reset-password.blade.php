@@ -1,0 +1,6 @@
+@extends('layouts.app')
+@section('title', 'Новый пароль — '.config('store.name', 'TechZone'))
+@section('robots', 'noindex,nofollow')
+@section('content')
+<section class="mx-auto max-w-md px-4 py-12 sm:px-6"><div class="rounded-3xl bg-white p-6 ring-1 ring-slate-200 sm:p-8"><h1 class="text-2xl font-semibold text-slate-950">Новый пароль</h1>@if($errors->any())<div class="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800">{{ $errors->first() }}</div>@endif<form action="{{ route('password.update') }}" method="POST" class="mt-6 space-y-4">@csrf<input type="hidden" name="token" value="{{ $token }}"><label class="block text-sm font-medium">Email<input type="email" name="email" value="{{ old('email', $email) }}" required class="mt-1.5 w-full rounded-xl border-slate-300"></label><label class="block text-sm font-medium">Новый пароль<input type="password" name="password" required autocomplete="new-password" class="mt-1.5 w-full rounded-xl border-slate-300"></label><label class="block text-sm font-medium">Повторите пароль<input type="password" name="password_confirmation" required autocomplete="new-password" class="mt-1.5 w-full rounded-xl border-slate-300"></label><button class="w-full rounded-xl bg-slate-900 px-5 py-3 font-semibold text-white">Сохранить пароль</button></form></div></section>
+@endsection

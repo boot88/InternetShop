@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class HomeController extends Controller
 {
@@ -16,64 +15,76 @@ class HomeController extends Controller
 
         $searchResults = $searchQuery === ''
             ? collect()
-            : Product::with($withProductData)
-                ->active()
-                ->search($searchQuery)
-                ->latest()
-                ->limit(12)
-                ->get();
+            : Product::with($withProductData)->active()->search($searchQuery)->latest()->limit(12)->get();
 
-        $featuredProducts = Product::with($withProductData)
+        $featuredPool = Product::with($withProductData)
             ->active()
             ->featured()
-            ->latest()
-            ->limit(8)
+            ->orderByDesc('updated_at')
+            ->limit(16)
             ->get();
 
+        if ($featuredPool->isEmpty()) {
+            $featuredPool = Product::with($withProductData)
+                ->active()
+                ->orderByDesc('updated_at')
+                ->limit(16)
+                ->get();
+        }
+
+        $featuredProducts = $featuredPool->shuffle()->take(8)->values();
+        $heroCandidates = $featuredPool->filter(fn (Product $product): bool => $product->main_image !== null)->values();
+        $heroProduct = null;
+
+        if ($heroCandidates->isNotEmpty()) {
+            $lastHeroProductId = (int) $request->session()->get('home_hero_product_id', 0);
+            $availableHeroProducts = $heroCandidates->reject(
+                fn (Product $product): bool => $heroCandidates->count() > 1 && $product->id === $lastHeroProductId
+            );
+            $heroProduct = $availableHeroProducts->random();
+            $request->session()->put('home_hero_product_id', $heroProduct->id);
+        }
+
         $featuredCategories = Category::withCount(['products' => fn ($query) => $query->active()])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($query) => $query->active())
             ->orderByDesc('products_count')
             ->limit(6)
             ->get();
 
         $categories = Category::withCount(['products' => fn ($query) => $query->active()])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($query) => $query->active())
             ->orderBy('name')
             ->get();
 
-        $popularProducts = Product::query()
-            ->with($withProductData)
+        $recentProducts = Product::with($withProductData)
             ->active()
-            ->leftJoin('order_items', 'order_items.product_id', '=', 'products.id')
-            ->select('products.*', DB::raw('COALESCE(SUM(order_items.quantity), 0) as sold_qty'))
-            ->groupBy('products.id')
-            ->orderByDesc('sold_qty')
-            ->latest('products.created_at')
-            ->limit(8)
-            ->get();
-
-        $newProducts = Product::with($withProductData)
-            ->active()
-            ->latest()
-            ->limit(8)
-            ->get();
+            ->orderByDesc('updated_at')
+            ->limit(16)
+            ->get()
+            ->shuffle()
+            ->take(8)
+            ->values();
 
         $saleProducts = Product::with($withProductData)
             ->active()
-            ->whereColumn('compare_price', '>', 'price')
+            ->where(function ($query): void {
+                $query->whereColumn('compare_price', '>', 'price')
+                    ->orWhereHas('variants', fn ($variant) => $variant->where('is_active', true)->whereColumn('product_variants.compare_price', '>', 'product_variants.price'));
+            })
             ->orderByRaw('(compare_price - price) DESC')
             ->limit(8)
             ->get();
 
-        return view('welcome', compact(
-            'featuredProducts',
-            'featuredCategories',
-            'categories',
-            'searchResults',
-            'searchQuery',
-            'popularProducts',
-            'newProducts',
-            'saleProducts',
-        ));
+        return view('welcome', [
+            'featuredProducts' => $featuredProducts,
+            'heroProduct' => $heroProduct,
+            'featuredCategories' => $featuredCategories,
+            'categories' => $categories,
+            'productsCount' => Product::active()->count(),
+            'searchResults' => $searchResults,
+            'searchQuery' => $searchQuery,
+            'recentProducts' => $recentProducts,
+            'saleProducts' => $saleProducts,
+        ]);
     }
 }

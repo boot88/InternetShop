@@ -87,6 +87,8 @@ class ProductVariant extends Model
 
     public function getStockQuantityAttribute(): int
     {
-        return (int) ($this->stock?->quantity ?? 0);
+        return $this->relationLoaded('stock')
+            ? (int) ($this->getRelation('stock')?->quantity ?? 0)
+            : 0;
     }
 }

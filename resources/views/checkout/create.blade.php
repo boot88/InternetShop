@@ -1,77 +1,17 @@
 @extends('layouts.app')
-
-@section('title', 'Оформление заказа — TechZone')
-
+@section('title', 'Оформление заказа — '.config('store.name', 'TechZone'))
+@section('robots', 'noindex,nofollow')
 @section('content')
-<section class="bg-slate-50 py-8 sm:py-12">
-  <div class="mx-auto grid max-w-6xl gap-6 px-4 lg:grid-cols-[1fr_360px] sm:px-6 lg:px-8">
-    <form action="{{ route('checkout.store') }}" method="POST" class="rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-7">
-      @csrf
-      <h1 class="text-2xl font-semibold text-slate-950">Оформление заказа</h1>
-      <p class="mt-2 text-sm text-slate-600">После заявки менеджер уточнит наличие, способ доставки и оплату.</p>
-
-      @if($errors->any())
-        <div class="mt-5 rounded-2xl bg-rose-50 p-4 text-sm text-rose-800" role="alert">
-          <ul class="list-inside list-disc space-y-1">
-            @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
-          </ul>
-        </div>
-      @endif
-
-      <div class="mt-7 grid gap-4 sm:grid-cols-2">
-        <label class="block text-sm font-medium text-slate-800">
-          Имя
-          <input name="name" value="{{ old('name', auth()->user()?->name) }}" required autocomplete="name" class="mt-1.5 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">
-        </label>
-        <label class="block text-sm font-medium text-slate-800">
-          Телефон
-          <input name="phone" value="{{ old('phone') }}" required autocomplete="tel" inputmode="tel" class="mt-1.5 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">
-        </label>
-        <label class="block text-sm font-medium text-slate-800 sm:col-span-2">
-          Email <span class="font-normal text-slate-500">(необязательно)</span>
-          <input type="email" name="email" value="{{ old('email', auth()->user()?->email) }}" autocomplete="email" class="mt-1.5 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">
-        </label>
-        <label class="block text-sm font-medium text-slate-800 sm:col-span-2">
-          Адрес или город для доставки
-          <textarea name="shipping_address" required rows="3" autocomplete="street-address" class="mt-1.5 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">{{ old('shipping_address') }}</textarea>
-        </label>
-      </div>
-
-      <fieldset class="mt-6">
-        <legend class="text-sm font-medium text-slate-800">Способ оплаты</legend>
-        <div class="mt-2 grid gap-3 sm:grid-cols-2">
-          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 hover:border-indigo-300">
-            <input class="mt-1 text-indigo-600" type="radio" name="payment_method" value="card_on_delivery" @checked(old('payment_method', 'card_on_delivery') === 'card_on_delivery')>
-            <span><span class="block text-sm font-semibold">При получении</span><span class="mt-1 block text-xs text-slate-500">Согласуем детали с менеджером.</span></span>
-          </label>
-          <label class="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 hover:border-indigo-300">
-            <input class="mt-1 text-indigo-600" type="radio" name="payment_method" value="bank_transfer" @checked(old('payment_method') === 'bank_transfer')>
-            <span><span class="block text-sm font-semibold">По счёту</span><span class="mt-1 block text-xs text-slate-500">Для юридических лиц и ИП.</span></span>
-          </label>
-        </div>
-      </fieldset>
-
-      <label class="mt-6 block text-sm font-medium text-slate-800">
-        Комментарий к заказу <span class="font-normal text-slate-500">(необязательно)</span>
-        <textarea name="customer_note" rows="3" class="mt-1.5 w-full rounded-xl border-slate-300 px-3 py-2.5 focus:border-indigo-500 focus:ring-indigo-500">{{ old('customer_note') }}</textarea>
-      </label>
-
-      <button type="submit" class="mt-7 w-full rounded-2xl bg-indigo-600 px-5 py-3 font-semibold text-white transition hover:bg-indigo-700 focus:outline-none focus:ring-4 focus:ring-indigo-200">Подтвердить заказ</button>
-    </form>
-
-    <aside class="h-fit rounded-3xl bg-white p-5 shadow-sm ring-1 ring-slate-200 sm:p-6">
-      <h2 class="text-lg font-semibold text-slate-950">Ваш заказ</h2>
-      <ul class="mt-5 divide-y divide-slate-100">
-        @foreach($items as $item)
-          <li class="py-3 first:pt-0">
-            <div class="flex justify-between gap-4 text-sm font-medium text-slate-900"><span>{{ $item->product->name }}</span><span class="whitespace-nowrap">{{ number_format($item->price * $item->quantity, 0, ',', ' ') }} ₽</span></div>
-            <p class="mt-1 text-xs text-slate-500">{{ $item->variant_attributes ? $item->variant_attributes.' · ' : '' }}{{ $item->quantity }} шт.</p>
-          </li>
-        @endforeach
-      </ul>
-      <div class="mt-5 flex items-end justify-between border-t border-slate-200 pt-5"><span class="font-semibold text-slate-900">Итого</span><span class="text-2xl font-semibold text-slate-950">{{ number_format($total, 0, ',', ' ') }} ₽</span></div>
-      <a href="{{ route('cart.index') }}" class="mt-5 block text-center text-sm font-medium text-indigo-600 hover:text-indigo-800">Вернуться в корзину</a>
-    </aside>
-  </div>
-</section>
+<section class="py-10"><div class="mx-auto grid max-w-6xl gap-6 px-4 sm:px-6 lg:grid-cols-[1fr_360px] lg:px-8">
+<form action="{{ route('checkout.store') }}" method="POST" class="rounded-3xl bg-white p-6 ring-1 ring-slate-200" data-checkout-form>@csrf<h1 class="text-2xl font-semibold text-slate-950">Оформление заказа</h1><p class="mt-2 text-sm leading-6 text-slate-600">Наличие проверяется системой. До предоплаты менеджер подтверждает срок, пункт выдачи и итоговую стоимость доставки, если она применяется.</p>
+@if($errors->any())<div class="mt-5 rounded-xl bg-rose-50 p-4 text-sm text-rose-800">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
+<div class="mt-6 grid gap-4 sm:grid-cols-2"><label class="text-sm font-medium">Имя<input name="name" value="{{ old('name',auth()->user()?->name) }}" required autocomplete="name" class="mt-1.5 w-full rounded-xl border-slate-300"></label><label class="text-sm font-medium">Телефон<input name="phone" value="{{ old('phone',auth()->user()?->phone) }}" required autocomplete="tel" class="mt-1.5 w-full rounded-xl border-slate-300"></label><label class="text-sm font-medium sm:col-span-2">Email <span class="font-normal text-slate-500">(для подтверждения)</span><input type="email" name="email" value="{{ old('email',auth()->user()?->email) }}" class="mt-1.5 w-full rounded-xl border-slate-300"></label><label class="text-sm font-medium sm:col-span-2">Город и адрес доставки<textarea name="shipping_address" rows="3" required class="mt-1.5 w-full rounded-xl border-slate-300">{{ old('shipping_address',auth()->user()?->address) }}</textarea></label></div>
+<fieldset class="mt-6"><legend class="text-sm font-medium">Способ получения</legend><div class="mt-2 grid gap-3"><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="shipping_method" value="store_pickup" @checked(old('shipping_method','store_pickup')==='store_pickup')><span><span class="block text-sm font-semibold">Самовывоз из магазина</span><span class="text-xs text-slate-500">Доступность и время выдачи подтвердим по SMS или email.</span></span></label><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="shipping_method" value="cdek_pickup" @checked(old('shipping_method')==='cdek_pickup')><span><span class="block text-sm font-semibold">Самовывоз из пункта СДЭК</span><span class="text-xs text-slate-500">Тариф и доступный пункт подтверждаются до предоплаты.</span></span></label><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="shipping_method" value="russian_post_pickup" @checked(old('shipping_method')==='russian_post_pickup')><span><span class="block text-sm font-semibold">Почта России: отделение</span><span class="text-xs text-slate-500">Тариф и срок подтверждаются до предоплаты.</span></span></label><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="shipping_method" value="russian_post_courier" @checked(old('shipping_method')==='russian_post_courier')><span><span class="block text-sm font-semibold">Почта России: курьер</span><span class="text-xs text-slate-500">Укажите полный адрес; возможность и тариф подтверждаются менеджером.</span></span></label></div></fieldset>
+<fieldset class="mt-6"><legend class="text-sm font-medium">Оплата</legend><div class="mt-2 grid gap-3 sm:grid-cols-2"><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="payment_method" value="online_prepayment" @checked(old('payment_method','online_prepayment')==='online_prepayment')><span><span class="block text-sm font-semibold">Онлайн-предоплата</span><span class="text-xs text-slate-500">100% после подтверждения заказа и реквизитов магазина.</span></span></label><label class="flex gap-3 rounded-2xl border border-slate-200 p-4"><input type="radio" name="payment_method" value="bank_transfer" @checked(old('payment_method')==='bank_transfer')><span><span class="block text-sm font-semibold">По счёту</span><span class="text-xs text-slate-500">Для юридических лиц и ИП; условия уточняются менеджером.</span></span></label></div></fieldset>
+<label class="mt-5 block text-sm font-medium">Комментарий<textarea name="customer_note" rows="3" class="mt-1.5 w-full rounded-xl border-slate-300">{{ old('customer_note') }}</textarea></label>
+<label class="mt-5 flex items-start gap-3 text-sm text-slate-600"><input type="checkbox" name="privacy_consent" value="1" required class="mt-1 rounded border-slate-300 text-indigo-600"><span>Согласен на обработку данных по <a href="{{ route('privacy') }}" class="font-semibold text-indigo-700">политике конфиденциальности</a>.</span></label><label class="mt-3 flex items-start gap-3 text-sm text-slate-600"><input type="checkbox" name="terms_consent" value="1" required class="mt-1 rounded border-slate-300 text-indigo-600"><span>Принимаю <a href="{{ route('terms') }}" class="font-semibold text-indigo-700">условия оформления заказа</a>.</span></label>
+<button type="submit" data-checkout-button class="mt-6 w-full rounded-xl bg-indigo-600 px-5 py-3 font-semibold text-white disabled:opacity-60">Создать заказ</button></form>
+<aside class="h-fit rounded-3xl bg-white p-6 ring-1 ring-slate-200"><h2 class="text-lg font-semibold">Ваш заказ</h2><ul class="mt-4 divide-y divide-slate-100">@foreach($items as $item)<li class="py-3"><div class="flex justify-between gap-4 text-sm"><span class="font-medium">{{ $item->product->name }}</span><span class="whitespace-nowrap font-semibold">{{ number_format($item->price*$item->quantity,0,',',' ') }} ₽</span></div><p class="mt-1 text-xs text-slate-500">{{ $item->quantity }} шт.@if($item->variant_attributes) · {{ $item->variant_attributes }}@endif</p></li>@endforeach</ul><dl class="mt-4 space-y-2 border-t pt-4 text-sm"><div class="flex justify-between"><dt>Товары</dt><dd>{{ number_format($subtotal,0,',',' ') }} ₽</dd></div>@if($discount>0)<div class="flex justify-between text-emerald-700"><dt>Скидка</dt><dd>−{{ number_format($discount,0,',',' ') }} ₽</dd></div>@endif<div class="flex justify-between text-lg font-semibold"><dt>Без доставки</dt><dd>{{ number_format($total,0,',',' ') }} ₽</dd></div></dl><p class="mt-4 text-xs leading-5 text-slate-500">{{ config('store.delivery_note') }}</p><a href="{{ route('cart.index') }}" class="mt-4 block text-center text-sm font-semibold text-indigo-700">Вернуться в корзину</a></aside>
+</div></section>
+@push('scripts')<script>document.querySelector('[data-checkout-form]')?.addEventListener('submit',()=>{const button=document.querySelector('[data-checkout-button]');if(button){button.disabled=true;button.textContent='Создаём заказ…';}});</script>@endpush
 @endsection

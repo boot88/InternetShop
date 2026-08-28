@@ -2,121 +2,115 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Product;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\View\View;
 
 class PageController extends Controller
 {
     public function delivery(): View
     {
-        return view('pages.delivery', [
-            'title' => 'Доставка и оплата',
-            'breadcrumbs' => [
-                ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Доставка и оплата', 'url' => route('delivery')]
-            ]
-        ]);
+        return view('pages.delivery', ['store' => config('store')]);
     }
 
     public function returns(): View
     {
-        return view('pages.returns', [
-            'title' => 'Возврат товара',
-            'breadcrumbs' => [
-                ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Возврат товара', 'url' => route('returns')]
-            ]
-        ]);
+        return view('pages.returns', ['store' => config('store')]);
     }
 
     public function faq(): View
     {
         $faqs = [
-            [
-                'question' => 'Как оформить заказ?',
-                'answer' => 'Выберите товары, добавьте их в корзину, перейдите в корзину и заполните данные для доставки. После подтверждения заказа мы свяжемся с вами для уточнения деталей.'
-            ],
-            [
-                'question' => 'Сколько стоит доставка?',
-                'answer' => 'Доставка бесплатна при заказе от 5000 рублей. При меньшей сумме стоимость доставки рассчитывается индивидуально в зависимости от вашего местоположения.'
-            ],
-            [
-                'question' => 'Как долго обрабатывается заказ?',
-                'answer' => 'Обработка заказа занимает от 1 до 24 часов. В выходные дни обработка может занять больше времени.'
-            ],
-            [
-                'question' => 'Можно ли изменить адрес доставки?',
-                'answer' => 'Да, вы можете изменить адрес доставки до момента отправки товара. Для этого свяжитесь с нашей службой поддержки.'
-            ],
-            [
-                'question' => 'Какие способы оплаты принимаются?',
-                'answer' => 'Мы принимаем банковские карты (Visa, MasterCard, Мир), электронные деньги (ЮMoney, Qiwi), а также наличные при получении.'
-            ],
-            [
-                'question' => 'Есть ли гарантия на товары?',
-                'answer' => 'Да, на все товары предоставляется гарантия от 1 года в зависимости от категории товара. Подробности смотрите в описании товара.'
-            ]
+            ['question' => 'Как оформить заказ?', 'answer' => 'Добавьте товары в корзину и заполните форму оформления. До оплаты менеджер подтвердит наличие, стоимость и срок доставки.'],
+            ['question' => 'Сколько стоит доставка?', 'answer' => config('store.delivery_note')],
+            ['question' => 'Какие способы оплаты доступны?', 'answer' => 'Для физических лиц нужна 100% предоплата после подтверждения заказа. Юридические лица и ИП могут запросить счёт; условия оплаты подтверждает менеджер.'],
+            ['question' => 'Можно ли изменить адрес?', 'answer' => 'Да, пока заказ не передан в доставку. Сообщите номер заказа через страницу контактов.'],
+            ['question' => 'Какая гарантия на товар?', 'answer' => config('store.warranty_note')],
+            ['question' => 'Где посмотреть заказ?', 'answer' => 'Войдите в аккаунт и откройте раздел «Мои заказы». Гостевой заказ доступен на странице подтверждения в текущем браузере.'],
         ];
 
-        return view('pages.faq', compact('faqs'), [
-            'title' => 'Частые вопросы',
-            'breadcrumbs' => [
-                ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Частые вопросы', 'url' => route('faq')]
-            ]
-        ]);
+        return view('pages.faq', compact('faqs'));
     }
 
     public function contacts(): View
     {
-        $contacts = [
-            'phone' => '+7 (999) 999-99-99',
-            'email' => 'info@store.com',
-            'address' => 'г. Москва, ул. Примерная, д. 1',
-            'work_hours' => 'Пн-Пт: 9:00-18:00, Сб-Вс: 10:00-16:00'
-        ];
+        return view('pages.contacts', ['contacts' => config('store')]);
+    }
 
-        return view('pages.contacts', compact('contacts'), [
-            'title' => 'Контакты',
-            'breadcrumbs' => [
-                ['name' => 'Главная', 'url' => '/'],
-                ['name' => 'Контакты', 'url' => route('contacts')]
-            ]
-        ]);
+    public function about(): View
+    {
+        return view('pages.about', ['store' => config('store')]);
+    }
+
+    public function deals(): View
+    {
+        $products = Product::query()
+            ->with(['images', 'brand', 'categories', 'stock', 'variants.stock'])
+            ->active()
+            ->where(function ($query): void {
+                $query->whereColumn('compare_price', '>', 'price')
+                    ->orWhereHas('variants', fn ($variant) => $variant->where('is_active', true)->whereColumn('product_variants.compare_price', '>', 'product_variants.price'));
+            })
+            ->orderByRaw('(compare_price - price) DESC')
+            ->paginate(12);
+
+        return view('pages.deals', compact('products'));
+    }
+
+    public function privacy(): View
+    {
+        return view('pages.privacy', ['store' => config('store')]);
+    }
+
+    public function terms(): View
+    {
+        return view('pages.terms', ['store' => config('store')]);
+    }
+
+    public function requisites(): View
+    {
+        return view('pages.requisites', ['store' => config('store')]);
     }
 
     public function contactSubmit(Request $request)
     {
+        $key = 'contact|'.$request->ip();
+        if (RateLimiter::tooManyAttempts($key, 3)) {
+            return back()->withInput()->withErrors(['contact' => 'Слишком много сообщений. Повторите попытку позже.']);
+        }
+
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email',
-            'phone' => 'required|string|max:20',
-            'subject' => 'required|string|max:255',
-            'message' => 'required|string|min:10'
+            'name' => ['required', 'string', 'max:120'],
+            'email' => ['required', 'email', 'max:255'],
+            'phone' => ['required', 'string', 'max:30'],
+            'subject' => ['required', 'string', 'max:160'],
+            'message' => ['required', 'string', 'min:10', 'max:3000'],
+            'privacy_consent' => ['accepted'],
+            'website' => ['nullable', 'max:0'],
         ]);
 
-        $recipient = config('mail.to.address') ?: config('mail.from.address');
+        $recipients = array_values(array_unique(array_filter([
+            config('store.email'),
+            ...config('store.notification_emails', []),
+        ])));
+        if ($recipients === []) {
+            return back()->withInput()->withErrors(['contact' => 'Email магазина пока не настроен. Используйте телефон или мессенджер.']);
+        }
 
+        RateLimiter::hit($key, 3600);
         try {
             Mail::raw(
                 "Имя: {$validated['name']}\nТелефон: {$validated['phone']}\nEmail: {$validated['email']}\nТема: {$validated['subject']}\n\n{$validated['message']}",
-                fn ($message) => $message->to($recipient)->subject('Сообщение с сайта TechZone: '.$validated['subject'])
+                fn ($message) => $message->to($recipients)->subject('Сообщение с сайта '.config('store.name', 'TechZone').': '.$validated['subject'])
             );
         } catch (\Throwable $exception) {
             report($exception);
-            Log::warning('Не удалось отправить сообщение с формы контактов.', ['email' => $validated['email']]);
 
-            return back()->withInput()->withErrors(['contact' => 'Не удалось отправить сообщение. Попробуйте позже или свяжитесь с нами по телефону.']);
+            return back()->withInput()->withErrors(['contact' => 'Не удалось отправить сообщение. Попробуйте позже.']);
         }
 
-        return redirect()->back()->with('success', 'Сообщение отправлено. Мы свяжемся с вами в ближайшее время.');
+        return back()->with('success', 'Сообщение отправлено.');
     }
-	
-	public function deals()
-	{
-		return view('pages.deals');
-	}
-	
 }

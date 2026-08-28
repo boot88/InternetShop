@@ -27,6 +27,7 @@ class Order extends Model
         'shipping_method',
         'payment_method',
         'payment_status',
+        'stock_restored_at',
         'transaction_id'
     ];
 
@@ -35,7 +36,8 @@ class Order extends Model
         'tax_amount' => 'decimal:2',
         'shipping_cost' => 'decimal:2',
         'discount_amount' => 'decimal:2',
-        'total' => 'decimal:2'
+        'total' => 'decimal:2',
+        'stock_restored_at' => 'datetime',
     ];
 
     public function user(): BelongsTo
@@ -74,5 +76,40 @@ class Order extends Model
             'status' => $status,
             'note' => $note
         ]);
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return match ($this->status) {
+            'pending' => 'Ожидает подтверждения',
+            'processing' => 'В обработке',
+            'shipped' => 'Передан в доставку',
+            'delivered' => 'Доставлен',
+            'cancelled' => 'Отменён',
+            'refunded' => 'Возврат оформлен',
+            default => $this->status,
+        };
+    }
+
+    public function getPaymentMethodLabelAttribute(): string
+    {
+        return match ($this->payment_method) {
+            'online_prepayment' => 'Онлайн-предоплата',
+            'card_on_delivery' => 'Оплата при получении',
+            'bank_transfer' => 'Оплата по счёту',
+            default => $this->payment_method,
+        };
+    }
+
+    public function getShippingMethodLabelAttribute(): string
+    {
+        return match ($this->shipping_method) {
+            'store_pickup' => 'Самовывоз из магазина',
+            'cdek_pickup' => 'Самовывоз из пункта СДЭК',
+            'russian_post_pickup' => 'Самовывоз из отделения Почты России',
+            'russian_post_courier' => 'Курьерская доставка Почтой России',
+            'agreed_before_payment' => 'Согласуется с менеджером',
+            default => $this->shipping_method,
+        };
     }
 }

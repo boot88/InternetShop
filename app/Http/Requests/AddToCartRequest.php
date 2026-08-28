@@ -14,7 +14,9 @@ class AddToCartRequest extends FormRequest
     {
         return [
             'variant_id' => 'nullable|exists:product_variants,id',
-            'quantity' => 'required|integer|min:1|max:10'
+            // Product cards add one item by default. The field remains
+            // optional so a missing hidden input can never block checkout.
+            'quantity' => 'nullable|integer|min:1|max:10'
         ];
     }
 
@@ -22,7 +24,6 @@ class AddToCartRequest extends FormRequest
     {
         return [
             'variant_id.exists' => 'Выбранный вариант больше недоступен.',
-            'quantity.required' => 'Количество обязательно',
             'quantity.min' => 'Минимальное количество: 1',
             'quantity.max' => 'Максимальное количество: 10'
         ];

@@ -1,72 +1,35 @@
 @extends('layouts.app')
-
-@section('title', 'Частые вопросы')
-
+@section('title', 'Частые вопросы — '.config('store.name', 'TechZone'))
+@section('meta_description', 'Ответы об оформлении, доставке, оплате и гарантии.')
+@php
+  $faqEntities = [];
+  foreach ($faqs as $faqItem) {
+      $faqEntities[] = [
+          '@type' => 'Question',
+          'name' => $faqItem['question'],
+          'acceptedAnswer' => [
+              '@type' => 'Answer',
+              'text' => $faqItem['answer'],
+          ],
+      ];
+  }
+  $faqSchema = [
+      '@context' => 'https://schema.org',
+      '@type' => 'FAQPage',
+      'mainEntity' => $faqEntities,
+  ];
+@endphp
+@push('head')
+<script type="application/ld+json">@json($faqSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)</script>
+@endpush
 @section('content')
-<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-    <nav class="flex mb-8" aria-label="Breadcrumb">
-        <ol class="flex items-center space-x-4">
-            @foreach($breadcrumbs as $breadcrumb)
-            <li>
-                @if(!$loop->last)
-                <a href="{{ $breadcrumb['url'] }}" class="text-gray-500 hover:text-gray-700">{{ $breadcrumb['name'] }}</a>
-                @else
-                <span class="text-gray-400">{{ $breadcrumb['name'] }}</span>
-                @endif
-            </li>
-            @if(!$loop->last)
-            <li>
-                <svg class="flex-shrink-0 h-4 w-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                </svg>
-            </li>
-            @endif
-            @endforeach
-        </ol>
-    </nav>
-
-    <h1 class="text-3xl font-bold text-gray-900 mb-8">Частые вопросы</h1>
-
-    <div class="space-y-4">
-        @foreach($faqs as $faq)
-        <div class="bg-white rounded-lg shadow-md" x-data="{ open: {{ $loop->first ? 'true' : 'false' }} }">
-            <button 
-                @click="open = !open" 
-                class="w-full px-6 py-4 text-left flex justify-between items-center hover:bg-gray-50 rounded-lg"
-            >
-                <span class="font-semibold text-gray-900">{{ $faq['question'] }}</span>
-                <svg 
-                    class="w-5 h-5 text-gray-500 transition-transform duration-200" 
-                    :class="{ 'transform rotate-180': open }" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                >
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-                </svg>
-            </button>
-            <div x-show="open" x-collapse class="px-6 pb-4 text-gray-600">
-                {{ $faq['answer'] }}
-            </div>
-        </div>
-        @endforeach
-    </div>
-
-    <!-- Дополнительная помощь -->
-    <div class="mt-12 bg-blue-50 rounded-lg p-6 text-center">
-        <h3 class="text-xl font-semibold text-gray-900 mb-2">Не нашли ответ на свой вопрос?</h3>
-        <p class="text-gray-600 mb-4">Свяжитесь с нашей службой поддержки, мы всегда готовы помочь!</p>
-        <a href="{{ route('contacts') }}" class="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition duration-200">
-            Связаться с нами
-        </a>
-    </div>
-</div>
-
-<script>
-    document.addEventListener('alpine:init', () => {
-        Alpine.data('faq', () => ({
-            open: false
-        }))
-    })
-</script>
+<section class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">
+  <p class="text-sm font-semibold text-indigo-600">ПОМОЩЬ</p><h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950">Частые вопросы</h1>
+  <div class="mt-8 space-y-3">
+    @foreach($faqs as $faq)
+      <details class="group rounded-2xl bg-white ring-1 ring-slate-200" @if($loop->first) open @endif><summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 font-semibold text-slate-900"><span>{{ $faq['question'] }}</span><span class="text-xl text-slate-400 group-open:rotate-45">+</span></summary><p class="border-t border-slate-100 px-5 py-4 text-sm leading-6 text-slate-600">{{ $faq['answer'] }}</p></details>
+    @endforeach
+  </div>
+  <div class="mt-8 rounded-2xl bg-indigo-50 p-6"><h2 class="font-semibold text-slate-950">Нужна помощь?</h2><p class="mt-2 text-sm text-slate-600">Напишите нам и укажите модель товара или номер заказа.</p><a href="{{ route('contacts') }}" class="mt-4 inline-flex rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white">Связаться с магазином</a></div>
+</section>
 @endsection

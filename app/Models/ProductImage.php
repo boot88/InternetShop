@@ -33,7 +33,14 @@ class ProductImage extends Model
         $p = trim((string) $this->image_path);
 
         if ($p === '') {
-            return asset('images/placeholder.jpg');
+            return asset('images/product-placeholder.svg');
+        }
+
+        // Some web servers do not send AVIF with an image MIME type. The DJI
+        // photo has a WebP copy so it displays consistently in all browsers.
+        if (str_ends_with(ltrim($p, '/'), 'djimini.avif')
+            && is_file(public_path('images/djimini.webp'))) {
+            return asset('images/djimini.webp');
         }
 
         if (preg_match('~^https?://~i', $p)) {
@@ -53,6 +60,12 @@ class ProductImage extends Model
             return asset($p);
         }
 
-        return asset('storage/' . $p);
+        // Seeded and imported product images may contain only the filename,
+        // while the actual static files live in public/images.
+        if (! str_contains($p, '/') && is_file(public_path('images/' . $p))) {
+            return asset('images/' . $p);
+        }
+
+        return asset('images/product-placeholder.svg');
     }
 }

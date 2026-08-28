@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" role="img" aria-labelledby="title">
+  <title id="title">Изображение товара скоро появится</title>
+  <rect width="800" height="600" fill="#f1f5f9"/>
+  <path d="M290 210h220a24 24 0 0 1 24 24v132a24 24 0 0 1-24 24H290a24 24 0 0 1-24-24V234a24 24 0 0 1 24-24Z" fill="#cbd5e1"/>
+  <circle cx="340" cy="270" r="28" fill="#94a3b8"/>
+  <path d="m286 362 72-72 52 52 42-42 62 62H286Z" fill="#94a3b8"/>
+  <text x="400" y="450" text-anchor="middle" fill="#64748b" font-family="Arial, sans-serif" font-size="24">Фото скоро появится</text>
+</svg>
