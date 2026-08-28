@@ -76,8 +76,11 @@ return new class extends Migration
             $brandId = DB::table('brands')->where('name', $brandName)->value('id');
             $categoryId = DB::table('categories')->where('slug', $categorySlug)->value('id');
             $slug = str($name)->slug()->toString();
-            DB::table('products')->updateOrInsert(['sku' => $sku], [
-                'name' => $name, 'slug' => $slug, 'model' => $model, 'brand_id' => $brandId,
+            // Legacy catalogue rows can already own the final slug under an
+            // older SKU. The public slug is the stable identity, so update
+            // that row instead of attempting to insert a duplicate product.
+            DB::table('products')->updateOrInsert(['slug' => $slug], [
+                'sku' => $sku, 'name' => $name, 'model' => $model, 'brand_id' => $brandId,
                 'description' => $description, 'short_description' => $shortDescription,
                 'price' => $price, 'compare_price' => null, 'is_active' => true,
                 'is_featured' => in_array($sku, ['DJI-MINI4P-RC2', 'APL-MBA13-M4-256', 'SAM-S25U-256'], true),
