@@ -91,8 +91,11 @@ class PageController extends Controller
             'website' => ['nullable', 'max:0'],
         ]);
 
-        $recipient = config('store.email') ?: config('mail.from.address');
-        if (! $recipient) {
+        $recipients = array_values(array_unique(array_filter([
+            config('store.email'),
+            ...config('store.notification_emails', []),
+        ])));
+        if ($recipients === []) {
             return back()->withInput()->withErrors(['contact' => 'Email магазина пока не настроен. Используйте телефон или мессенджер.']);
         }
 
@@ -100,7 +103,7 @@ class PageController extends Controller
         try {
             Mail::raw(
                 "Имя: {$validated['name']}\nТелефон: {$validated['phone']}\nEmail: {$validated['email']}\nТема: {$validated['subject']}\n\n{$validated['message']}",
-                fn ($message) => $message->to($recipient)->subject('Сообщение с сайта TechZone: '.$validated['subject'])
+                fn ($message) => $message->to($recipients)->subject('Сообщение с сайта '.config('store.name', 'TechZone').': '.$validated['subject'])
             );
         } catch (\Throwable $exception) {
             report($exception);

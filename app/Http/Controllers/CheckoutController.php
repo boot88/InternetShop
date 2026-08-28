@@ -140,7 +140,7 @@ class CheckoutController extends Controller
     {
         $recipients = array_values(array_unique(array_filter([
             config('store.email'),
-            ...config('store.admin_emails', []),
+            ...config('store.notification_emails', []),
         ])));
         $text = "Заказ {$order->order_number}\nСумма товаров: ".number_format((float) $order->total, 0, ',', ' ')." ₽\nСпособ доставки: {$order->shipping_method_label}\nСтоимость доставки: ".($order->shipping_cost > 0 ? number_format((float) $order->shipping_cost, 0, ',', ' ').' ₽' : 'подтверждается менеджером, если применимо').'.';
 

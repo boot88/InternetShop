@@ -1,8 +1,26 @@
 @extends('layouts.app')
 @section('title', 'Частые вопросы — '.config('store.name', 'TechZone'))
 @section('meta_description', 'Ответы об оформлении, доставке, оплате и гарантии.')
+@php
+  $faqEntities = [];
+  foreach ($faqs as $faqItem) {
+      $faqEntities[] = [
+          '@type' => 'Question',
+          'name' => $faqItem['question'],
+          'acceptedAnswer' => [
+              '@type' => 'Answer',
+              'text' => $faqItem['answer'],
+          ],
+      ];
+  }
+  $faqSchema = [
+      '@context' => 'https://schema.org',
+      '@type' => 'FAQPage',
+      'mainEntity' => $faqEntities,
+  ];
+@endphp
 @push('head')
-<script type="application/ld+json">@json(['@context'=>'https://schema.org','@type'=>'FAQPage','mainEntity'=>collect($faqs)->map(fn($faq)=>['@type'=>'Question','name'=>$faq['question'],'acceptedAnswer'=>['@type'=>'Answer','text'=>$faq['answer']])->values()], JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)</script>
+<script type="application/ld+json">@json($faqSchema, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)</script>
 @endpush
 @section('content')
 <section class="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8">

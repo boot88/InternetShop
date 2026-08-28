@@ -7,6 +7,7 @@ use App\Models\Stock;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
 
@@ -128,6 +129,33 @@ class StorefrontFlowTest extends TestCase
         $response->assertRedirect(route('admin.dashboard'));
         $this->assertAuthenticated();
         $this->get(route('admin.dashboard'))->assertOk();
+    }
+
+    public function test_registration_sends_email_verification_notification(): void
+    {
+        Notification::fake();
+
+        $response = $this->post(route('register'), [
+            'name' => 'Покупатель',
+            'email' => 'buyer@example.test',
+            'password' => 'Password123',
+            'password_confirmation' => 'Password123',
+            'terms_consent' => '1',
+            'privacy_consent' => '1',
+        ]);
+
+        $user = User::query()->where('email', 'buyer@example.test')->firstOrFail();
+
+        $response->assertRedirect(route('verification.notice'));
+        Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_faq_page_renders_with_structured_data(): void
+    {
+        $this->get(route('faq'))
+            ->assertOk()
+            ->assertSee('FAQPage')
+            ->assertSee('Частые вопросы');
     }
 
     public function test_public_pages_do_not_expose_developer_placeholders(): void

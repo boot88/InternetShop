@@ -4,7 +4,7 @@
 @section('content')
 <section class="mx-auto max-w-md px-4 py-12 sm:px-6">
   <div class="rounded-3xl bg-white p-6 shadow-sm ring-1 ring-slate-200 sm:p-8">
-    <h1 class="text-2xl font-semibold text-slate-950">Создать аккаунт</h1><p class="mt-2 text-sm text-slate-600">Сохраняйте данные и следите за статусами заказов.</p>
+    <h1 class="text-2xl font-semibold text-slate-950">Создать аккаунт</h1><p class="mt-2 text-sm leading-6 text-slate-600">После регистрации мы отправим письмо со ссылкой подтверждения. Пароль в письме не передаётся; если вы его забудете, используйте безопасное восстановление доступа.</p>
     @if($errors->any())<div class="mt-4 rounded-xl bg-rose-50 p-3 text-sm text-rose-800">@foreach($errors->all() as $error)<p>{{ $error }}</p>@endforeach</div>@endif
     <form action="{{ route('register') }}" method="POST" class="mt-6 space-y-4">@csrf
       <label class="block text-sm font-medium">Имя<input name="name" value="{{ old('name') }}" required autofocus autocomplete="name" class="mt-1.5 w-full rounded-xl border-slate-300"></label>
